@@ -216,7 +216,11 @@ export function logResponseError(
   message: string,
 ) {
   console.log(midLine('ERROR'));
-  console.log(row(c.red(truncate(message, W - 6))));
+  // Log full error without truncation — wrap lines to box width
+  const errorLines = wrap(message, `${c.dim('│')} `, W - 6);
+  for (const line of errorLines) {
+    console.log(row(c.red(line)));
+  }
   console.log(midLine());
   console.log(row(`${c.red(String(status))}`));
   console.log(botLine());

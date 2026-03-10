@@ -78,7 +78,7 @@ export function createMessagesRoute(config: Config): Hono {
       if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
         logResponseSync(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime, content);
       } else {
-        logResponseError(body.model, backend.backendName, upstreamRes.status, responseBody.slice(0, 200));
+        logResponseError(body.model, backend.backendName, upstreamRes.status, responseBody);
       }
 
       return new Response(responseBody, {
