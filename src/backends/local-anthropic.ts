@@ -117,8 +117,7 @@ function prepareForLocalModel(req: AnthropicRequest): AnthropicRequest {
     messages: cleaned,
     system,
     max_tokens,
-    // Force sync — LM Studio streaming via /v1/messages hangs through proxy
-    stream: false,
+    stream: req.stream,
   };
   if (tools && tools.length > 0) {
     result.tools = tools;
