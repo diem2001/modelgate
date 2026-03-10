@@ -41,9 +41,14 @@ export function initConfigStore(baseConfig: Config) {
   const stored = loadFromDisk();
   if (stored) {
     // Merge: stored backends/routing override base, but keep server/auth/logging from base
+    // Per-backend deep merge so env overrides (e.g. LMSTUDIO_API_KEY) are preserved
+    const mergedBackends: Record<string, BackendConfig> = { ...baseConfig.backends };
+    for (const [name, storedBackend] of Object.entries(stored.backends ?? {})) {
+      mergedBackends[name] = { ...baseConfig.backends[name], ...storedBackend };
+    }
     current = {
       ...baseConfig,
-      backends: { ...baseConfig.backends, ...stored.backends },
+      backends: mergedBackends,
       routing: stored.routing ?? baseConfig.routing,
     };
   } else {
