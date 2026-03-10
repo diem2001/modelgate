@@ -179,7 +179,10 @@ function trimContextForLocalModel(req: AnthropicRequest): AnthropicRequest {
     return { ...msg, content: text };
   }).filter((msg): msg is AnthropicMessage => msg !== null);
 
-  return { ...req, system, messages: cleaned };
+  // Cap max_tokens for local models (32k wastes VRAM allocation)
+  const max_tokens = Math.min(req.max_tokens, 4096);
+
+  return { ...req, system, messages: cleaned, max_tokens };
 }
 
 /**
