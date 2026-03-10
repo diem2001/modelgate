@@ -11,13 +11,21 @@ import {
 export async function forwardToOpenAICompat(
   req: AnthropicRequest,
   baseUrl: string,
+  cfAccessClientId?: string,
+  cfAccessClientSecret?: string,
 ): Promise<Response> {
   const openAIReq = anthropicToOpenAI(req);
   const url = `${baseUrl}/v1/chat/completions`;
 
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (cfAccessClientId && cfAccessClientSecret) {
+    headers['CF-Access-Client-Id'] = cfAccessClientId;
+    headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
+  }
+
   const upstreamRes = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify(openAIReq),
   });
 

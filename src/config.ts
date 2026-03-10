@@ -5,6 +5,8 @@ import { parse } from 'yaml';
 export interface BackendConfig {
   url: string;
   apiKey?: string;
+  cfAccessClientId?: string;
+  cfAccessClientSecret?: string;
 }
 
 export interface RoutingRule {
@@ -76,6 +78,12 @@ function applyEnvOverrides(config: Config): Config {
   }
   if (process.env.PORT) {
     config.server.port = parseInt(process.env.PORT, 10);
+  }
+  if (process.env.CF_ACCESS_CLIENT_ID && config.backends.lmstudio) {
+    config.backends.lmstudio.cfAccessClientId = process.env.CF_ACCESS_CLIENT_ID;
+  }
+  if (process.env.CF_ACCESS_CLIENT_SECRET && config.backends.lmstudio) {
+    config.backends.lmstudio.cfAccessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
   }
   return config;
 }

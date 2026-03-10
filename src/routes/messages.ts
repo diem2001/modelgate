@@ -51,7 +51,10 @@ export function createMessagesRoute(config: Config): Hono {
         }
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
-        upstreamRes = await forwardToOpenAICompat(body, backend.url);
+        const backendConfig = config.backends[backend.backendName];
+        upstreamRes = await forwardToOpenAICompat(
+          body, backend.url, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret,
+        );
       }
 
       const responseHeaders = new Headers();
