@@ -74,6 +74,7 @@ interface StreamState {
   messageId: string;
   model: string;
   contentIndex: number;
+  textBlockStarted: boolean;
   currentToolCall: { index: number; id: string; name: string; arguments: string } | null;
 }
 
@@ -82,6 +83,7 @@ export function createStreamState(model: string): StreamState {
     messageId: `msg_${randomUUID().replace(/-/g, '')}`,
     model,
     contentIndex: 0,
+    textBlockStarted: false,
     currentToolCall: null,
   };
 }
@@ -95,12 +97,13 @@ export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: St
 
   // Text content
   if (delta.content) {
-    if (state.contentIndex === 0 && !state.currentToolCall) {
+    if (!state.textBlockStarted) {
       events.push(sseEvent('content_block_start', {
         type: 'content_block_start',
         index: state.contentIndex,
         content_block: { type: 'text', text: '' },
       }));
+      state.textBlockStarted = true;
     }
     events.push(sseEvent('content_block_delta', {
       type: 'content_block_delta',
