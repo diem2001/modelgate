@@ -112,16 +112,21 @@ function prepareForLocalModel(req: AnthropicRequest): AnthropicRequest {
 
   const max_tokens = Math.min(req.max_tokens, 4096);
 
-  return {
-    ...req,
-    system,
+  const result: AnthropicRequest = {
+    model: req.model,
     messages: cleaned,
+    system,
     max_tokens,
-    tools: tools && tools.length > 0 ? tools : undefined,
-    tool_choice: tools && tools.length > 0 ? req.tool_choice : undefined,
-    // Strip fields LM Studio doesn't understand
-    metadata: undefined,
+    // Force sync — LM Studio streaming via /v1/messages hangs through proxy
+    stream: false,
   };
+  if (tools && tools.length > 0) {
+    result.tools = tools;
+    result.tool_choice = req.tool_choice;
+  }
+  if (req.temperature !== undefined) result.temperature = req.temperature;
+  if (req.top_p !== undefined) result.top_p = req.top_p;
+  return result;
 }
 
 function cleanText(text: string): string {
