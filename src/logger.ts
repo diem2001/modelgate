@@ -91,7 +91,7 @@ function extractToolUses(content: string | AnthropicContentBlock[]): Array<{ nam
   if (typeof content === 'string') return [];
   return content
     .filter(b => b.type === 'tool_use')
-    .map(b => ({ name: b.name ?? '?', args: truncate(JSON.stringify(b.input), 80) }));
+    .map(b => ({ name: b.name ?? '?', args: JSON.stringify(b.input) }));
 }
 
 function extractToolResults(content: string | AnthropicContentBlock[]): number {
@@ -134,7 +134,7 @@ export function logRequest(req: AnthropicRequest, backendName: string) {
     const toolResults = extractToolResults(lastUser.content);
 
     if (text) {
-      const wrapped = wrap(truncate(text, 300), `${c.dim('│')}        `, W - 10);
+      const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
       console.log(row(`${c.blue('▶')}  ${wrapped.join('\n')}`));
     }
     if (toolResults > 0) {
@@ -193,11 +193,11 @@ export function logStreamResponse(
   console.log(midLine('OUTPUT'));
 
   if (text) {
-    const wrapped = wrap(truncate(text, 500), `${c.dim('│')}        `, W - 10);
+    const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
     console.log(row(`${c.green('◀')}  ${wrapped.join('\n')}`));
   }
   for (const tc of toolCalls.values()) {
-    console.log(row(`   ${c.yellow('⚡')} ${c.bold(tc.name)}(${c.dim(truncate(tc.args, 80))})`));
+    console.log(row(`   ${c.yellow('⚡')} ${c.bold(tc.name)}(${c.dim(tc.args)})`));
   }
   if (!text && toolCalls.size === 0) {
     console.log(row(c.dim('  (empty response)')));
@@ -237,10 +237,10 @@ export function logError(_model: string, _backendName: string, err: Error) {
 function logContentBlocks(content: AnthropicContentBlock[]) {
   for (const block of content) {
     if (block.type === 'text' && block.text) {
-      const wrapped = wrap(truncate(block.text, 500), `${c.dim('│')}        `, W - 10);
+      const wrapped = wrap(block.text, `${c.dim('│')}        `, W - 10);
       console.log(row(`${c.green('◀')}  ${wrapped.join('\n')}`));
     } else if (block.type === 'tool_use') {
-      const args = truncate(JSON.stringify(block.input), 80);
+      const args = JSON.stringify(block.input);
       console.log(row(`   ${c.yellow('⚡')} ${c.bold(block.name ?? '?')}(${c.dim(args)})`));
     }
   }
