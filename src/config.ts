@@ -16,8 +16,14 @@ export interface LoggingConfig {
   level: 'minimal' | 'standard' | 'verbose';
 }
 
+export interface AuthConfig {
+  enabled: boolean;
+  cacheTtlMinutes: number;
+}
+
 export interface Config {
   server: { port: number; host: string };
+  auth: AuthConfig;
   backends: Record<string, BackendConfig>;
   routing: { rules: RoutingRule[] };
   logging: LoggingConfig;
@@ -25,14 +31,15 @@ export interface Config {
 
 const DEFAULT_CONFIG: Config = {
   server: { port: 4000, host: '0.0.0.0' },
+  auth: { enabled: true, cacheTtlMinutes: 60 },
   backends: {
     anthropic: { url: 'https://api.anthropic.com' },
-    ollama: { url: 'http://localhost:11434' },
+    lmstudio: { url: 'http://localhost:1234' },
   },
   routing: {
     rules: [
       { match: 'claude-*', backend: 'anthropic' },
-      { match: '*', backend: 'ollama' },
+      { match: '*', backend: 'lmstudio' },
     ],
   },
   logging: { level: 'standard' },
@@ -54,6 +61,7 @@ export function loadConfig(configPath?: string): Config {
 
   const config: Config = {
     server: { ...DEFAULT_CONFIG.server, ...parsed.server },
+    auth: { ...DEFAULT_CONFIG.auth, ...parsed.auth },
     backends: { ...DEFAULT_CONFIG.backends, ...parsed.backends },
     routing: parsed.routing ?? DEFAULT_CONFIG.routing,
     logging: { ...DEFAULT_CONFIG.logging, ...parsed.logging },

@@ -3,7 +3,7 @@ import type { Config } from '../config.js';
 import type { AnthropicRequest, AnthropicResponse } from '../types.js';
 import { resolveBackend } from '../router.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
-import { forwardToOllama } from '../backends/ollama.js';
+import { forwardToOpenAICompat } from '../backends/openai-compat.js';
 import {
   logRequest, logResponseSync, logStreamStart, logStreamResponse,
   logResponseError, logError,
@@ -40,17 +40,18 @@ export function createMessagesRoute(config: Config): Hono {
     try {
       let upstreamRes: Response;
 
+      const headers: Record<string, string> = {};
+      for (const [key, value] of Object.entries(c.req.header())) {
+        if (typeof value === 'string') headers[key] = value;
+      }
+
       if (backend.backendName === 'anthropic') {
-        const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(c.req.header())) {
-          if (typeof value === 'string') headers[key] = value;
-        }
         if (!headers['authorization'] && !headers['x-api-key'] && !backend.apiKey) {
           return c.json({ type: 'error', error: { type: 'authentication_error', message: 'No authentication provided (send Authorization or x-api-key header)' } }, 401);
         }
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
-        upstreamRes = await forwardToOllama(body, backend.url);
+        upstreamRes = await forwardToOpenAICompat(body, backend.url);
       }
 
       const responseHeaders = new Headers();

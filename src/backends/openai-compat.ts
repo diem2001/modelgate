@@ -8,7 +8,7 @@ import {
   openAIChunkToAnthropicEvents,
 } from '../transform/openai-to-anthropic.js';
 
-export async function forwardToOllama(
+export async function forwardToOpenAICompat(
   req: AnthropicRequest,
   baseUrl: string,
 ): Promise<Response> {
@@ -27,7 +27,7 @@ export async function forwardToOllama(
       type: 'error',
       error: {
         type: 'api_error',
-        message: `Ollama error (${upstreamRes.status}): ${errorText}`,
+        message: `Backend error (${upstreamRes.status}): ${errorText}`,
       },
     }), {
       status: upstreamRes.status,

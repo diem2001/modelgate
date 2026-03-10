@@ -2,6 +2,11 @@ server:
   port: 4000
   host: 0.0.0.0
 
+# Validate incoming tokens against Anthropic API (cached)
+auth:
+  enabled: true
+  cacheTtlMinutes: 60
+
 # minimal: one line per request
 # standard: + system/user message preview (default)
 # verbose: + all messages + tool names
@@ -11,19 +16,19 @@ logging:
 backends:
   anthropic:
     url: https://api.anthropic.com
-    # apiKey from ANTHROPIC_API_KEY env var
+    # Auth is passed through from the client's original token
 
-  ollama:
-    # Use host.docker.internal when running in Docker, localhost for native
-    url: http://host.docker.internal:11434
+  lmstudio:
+    # LM Studio OpenAI-compatible API (local or via Cloudflare tunnel)
+    url: http://localhost:1234
 
 routing:
   rules:
     - match: "claude-*"
       backend: anthropic
     - match: "qwen*"
-      backend: ollama
+      backend: lmstudio
     - match: "llama*"
-      backend: ollama
+      backend: lmstudio
     - match: "*"
-      backend: ollama
+      backend: lmstudio
