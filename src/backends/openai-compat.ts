@@ -166,23 +166,43 @@ function trimContextForLocalModel(req: AnthropicRequest): AnthropicRequest {
 
   // Clean Claude Code noise from message content
   const cleaned = trimmed.map(msg => {
-    if (typeof msg.content !== 'string') return msg;
-    let text = msg.content;
-    // Strip XML tags (command-name, local-command-stdout, system-reminder, etc.)
-    text = text.replace(/<[^>]+>[^<]*<\/[^>]+>/g, '');
-    text = text.replace(/<[^>]+>/g, '');
-    // Strip [Request interrupted by user] markers
-    text = text.replace(/\[Request interrupted by user\]/g, '');
-    // Collapse whitespace
-    text = text.replace(/\s+/g, ' ').trim();
-    if (!text) return null;
-    return { ...msg, content: text };
+    if (typeof msg.content === 'string') {
+      const text = cleanText(msg.content);
+      if (!text) return null;
+      return { ...msg, content: text };
+    }
+    if (Array.isArray(msg.content)) {
+      // Flatten array of blocks into a single cleaned string
+      const parts: string[] = [];
+      for (const block of msg.content) {
+        if (block.type === 'text' && block.text) {
+          const text = cleanText(block.text);
+          if (text) parts.push(text);
+        }
+      }
+      if (parts.length === 0) return null;
+      return { ...msg, content: parts.join(' ') };
+    }
+    return msg;
   }).filter((msg): msg is AnthropicMessage => msg !== null);
 
   // Cap max_tokens for local models (32k wastes VRAM allocation)
   const max_tokens = Math.min(req.max_tokens, 4096);
 
   return { ...req, system, messages: cleaned, max_tokens };
+}
+
+function cleanText(text: string): string {
+  // Strip XML tags (command-name, local-command-stdout, system-reminder, etc.)
+  text = text.replace(/<[^>]+>[^<]*<\/[^>]+>/g, '');
+  text = text.replace(/<[^>]+>/g, '');
+  // Strip ANSI escape codes
+  text = text.replace(/\x1b\[[0-9;]*m/g, '');
+  // Strip [Request interrupted by user] markers
+  text = text.replace(/\[Request interrupted by user\]/g, '');
+  // Collapse whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
 }
 
 /**
