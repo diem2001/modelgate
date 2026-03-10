@@ -12,6 +12,7 @@ export interface BackendConfig {
 export interface RoutingRule {
   match: string;
   backend: string;
+  model?: string; // override model name sent to backend
 }
 
 export interface LoggingConfig {

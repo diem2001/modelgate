@@ -34,6 +34,11 @@ export function createMessagesRoute(config: Config): Hono {
       return c.json({ type: 'error', error: { type: 'invalid_request_error', message: (err as Error).message } }, 400);
     }
 
+    // Apply model override from routing rule (e.g. haiku → qwen2.5-coder-32b)
+    if (backend.modelOverride) {
+      body.model = backend.modelOverride;
+    }
+
     logRequest(body, backend.backendName);
 
     // Log incoming Anthropic payload (full, no truncation)

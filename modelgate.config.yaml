@@ -24,6 +24,9 @@ backends:
 
 routing:
   rules:
+    - match: "claude-haiku-*"
+      backend: lmstudio
+      model: qwen2.5-coder-32b
     - match: "claude-*"
       backend: anthropic
     - match: "qwen*"

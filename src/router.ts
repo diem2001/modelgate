@@ -8,12 +8,12 @@ function matchesPattern(model: string, pattern: string): boolean {
   return model === pattern;
 }
 
-export function resolveBackend(model: string, config: Config): { backendName: string; url: string; apiKey?: string } {
+export function resolveBackend(model: string, config: Config): { backendName: string; url: string; apiKey?: string; modelOverride?: string } {
   for (const rule of config.routing.rules) {
     if (matchesPattern(model, rule.match)) {
       const backend = config.backends[rule.backend];
       if (!backend) throw new Error(`Backend "${rule.backend}" not found in config`);
-      return { backendName: rule.backend, url: backend.url, apiKey: backend.apiKey };
+      return { backendName: rule.backend, url: backend.url, apiKey: backend.apiKey, modelOverride: rule.model };
     }
   }
   throw new Error(`No routing rule matched model "${model}"`);
