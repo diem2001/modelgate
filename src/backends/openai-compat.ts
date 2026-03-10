@@ -28,10 +28,15 @@ export async function forwardToOpenAICompat(
     headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
   }
 
+  const body = JSON.stringify(openAIReq, null, 2);
+  console.log(`\n\x1b[2m┌── OUTGOING PAYLOAD → ${url} ──┐\x1b[0m`);
+  console.log(body);
+  console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
+
   const upstreamRes = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify(openAIReq),
+    body,
   });
 
   if (!upstreamRes.ok) {
