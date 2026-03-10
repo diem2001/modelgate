@@ -1,10 +1,13 @@
 services:
   modelgate:
     build: .
-    network_mode: host
+    ports:
+      - "4000:4000"
     volumes:
       - ./modelgate.config.yaml:/app/modelgate.config.yaml:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LMSTUDIO_API_KEY=${LMSTUDIO_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped

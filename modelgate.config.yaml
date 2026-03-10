@@ -20,7 +20,7 @@ backends:
 
   lmstudio:
     # LM Studio OpenAI-compatible API (via SSH tunnel from Mac)
-    url: http://localhost:11234
+    url: http://host.docker.internal:11234
 
 routing:
   rules:
