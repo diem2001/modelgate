@@ -21,11 +21,33 @@ const app = new Hono();
 // Health check (no auth)
 app.get('/health', (c) => c.json({ status: 'ok', version: '0.2.0' }));
 
-// Admin panel — static files (no auth, internal use only)
+// Admin Basic Auth middleware
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+app.use('/admin/*', async (c, next) => {
+  if (!ADMIN_PASSWORD) return next(); // no password set = no auth
+
+  const authHeader = c.req.header('authorization');
+  if (authHeader?.startsWith('Basic ')) {
+    const decoded = Buffer.from(authHeader.slice(6), 'base64').toString();
+    const [user, pass] = decoded.split(':');
+    if (user === ADMIN_USER && pass === ADMIN_PASSWORD) {
+      return next();
+    }
+  }
+
+  return new Response('Unauthorized', {
+    status: 401,
+    headers: { 'WWW-Authenticate': 'Basic realm="ModelGate Admin"' },
+  });
+});
+
+// Admin panel — static files
 app.get('/admin', (c) => c.redirect('/admin/'));
 app.use('/admin/*', serveStatic({ root: './', rewriteRequestPath: (path) => path.replace('/admin/', '/admin/') }));
 
-// Admin API (no auth, internal use only)
+// Admin API
 app.route('/admin', createAdminApi());
 
 // Auth middleware for all /v1/* routes

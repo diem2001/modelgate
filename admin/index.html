@@ -1,99 +1,675 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ModelGate Admin</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwindcss.config={darkMode:'class',theme:{extend:{colors:{bg:'#0f1117',card:'#1a1d27',border:'#2a2d3a',accent:'#6366f1',accentHover:'#818cf8'}}}}</script>
+  <title>ModelGate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .fade-in { animation: fadeIn 0.2s ease-in; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-    input, select { background: #0f1117 !important; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #080b12;
+      --bg-surface: #0d1117;
+      --bg-card: #131820;
+      --bg-card-hover: #181f2a;
+      --bg-elevated: #1c2333;
+      --border: #1e2736;
+      --border-subtle: #161d29;
+      --border-focus: #2d9cdb;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+      --accent-cyan: #2d9cdb;
+      --accent-cyan-dim: rgba(45, 156, 219, 0.12);
+      --accent-cyan-glow: rgba(45, 156, 219, 0.25);
+      --accent-amber: #d4a053;
+      --accent-amber-dim: rgba(212, 160, 83, 0.12);
+      --accent-green: #3fb950;
+      --accent-green-dim: rgba(63, 185, 80, 0.12);
+      --accent-red: #f85149;
+      --accent-red-dim: rgba(248, 81, 73, 0.10);
+      --accent-purple: #a78bfa;
+      --accent-purple-dim: rgba(167, 139, 250, 0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Dot grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, var(--border-subtle) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+      animation: fadeDown 0.5s ease-out;
+    }
+
+    .header-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent-cyan), #1a6fa3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 20px;
+      color: #fff;
+      letter-spacing: -1px;
+      box-shadow: 0 0 20px var(--accent-cyan-glow);
+    }
+
+    .header-text h1 {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+
+    .header-text p {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px rgba(63, 185, 80, 0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* ── Sections ── */
+    .section {
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s ease-out both;
+    }
+    .section:nth-child(2) { animation-delay: 0.08s; }
+    .section:nth-child(3) { animation-delay: 0.16s; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 12px var(--accent-cyan-dim);
+    }
+
+    .btn-primary {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #3aade8;
+      border-color: #3aade8;
+      color: #fff;
+      box-shadow: 0 0 20px var(--accent-cyan-glow);
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .btn-icon {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-icon:hover {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border-color: var(--border);
+    }
+    .btn-icon.danger:hover {
+      background: var(--accent-red-dim);
+      color: var(--accent-red);
+      border-color: rgba(248, 81, 73, 0.2);
+    }
+
+    /* ── Backend Cards ── */
+    .backends-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .backend-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all var(--transition);
+      cursor: default;
+    }
+    .backend-card:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-card-hover);
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+
+    .backend-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 15px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .backend-icon.anthropic { background: linear-gradient(135deg, #d4763a, #c25e28); }
+    .backend-icon.lmstudio { background: linear-gradient(135deg, #2d9cdb, #1a6fa3); }
+    .backend-icon.openrouter { background: linear-gradient(135deg, #3fb950, #238636); }
+    .backend-icon.default { background: linear-gradient(135deg, #6e7681, #484f58); }
+
+    .backend-info { flex: 1; min-width: 0; }
+
+    .backend-name {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .backend-url {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .backend-tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .tag-mode-anthropic { background: var(--accent-amber-dim); color: var(--accent-amber); }
+    .tag-mode-openai { background: var(--accent-purple-dim); color: var(--accent-purple); }
+    .tag-optimized { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
+    .tag-key { background: var(--accent-green-dim); color: var(--accent-green); }
+    .tag-nokey { background: rgba(139, 148, 158, 0.08); color: var(--text-muted); }
+
+    .backend-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── Routing Table ── */
+    .routing-table {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .routing-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .routing-header span {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+    }
+
+    .routing-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      gap: 8px;
+      padding: 6px 16px;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background var(--transition);
+    }
+    .routing-row:last-child { border-bottom: none; }
+    .routing-row:hover { background: var(--bg-card-hover); }
+
+    .routing-row .row-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .routing-row input,
+    .routing-row select {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      outline: none;
+      transition: all var(--transition);
+      width: 100%;
+    }
+    .routing-row input:hover,
+    .routing-row select:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border);
+    }
+    .routing-row input:focus,
+    .routing-row select:focus {
+      background: var(--bg-elevated);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 2px var(--accent-cyan-dim);
+    }
+
+    .routing-row select option {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 2px;
+      justify-content: center;
+    }
+
+    .routing-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px 16px;
+      gap: 8px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      animation: scaleIn 0.2s ease-out;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h3 {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      outline: none;
+      transition: all var(--transition);
+    }
+    .form-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px var(--accent-cyan-dim);
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding-top: 26px;
+    }
+
+    .form-checkbox input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-deep);
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: all var(--transition);
+    }
+    .form-checkbox input[type="checkbox"]:checked {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+    .form-checkbox input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-family: var(--mono);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .modal-actions .btn { flex: 1; justify-content: center; padding: 10px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast.success { border-color: rgba(63, 185, 80, 0.3); }
+    .toast.success::before { content: '●'; color: var(--accent-green); font-size: 8px; }
+    .toast.error { border-color: rgba(248, 81, 73, 0.3); }
+    .toast.error::before { content: '●'; color: var(--accent-red); font-size: 8px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── SVG Icons ── */
+    .icon { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
-<body class="bg-bg text-gray-200 min-h-screen">
-  <div class="max-w-4xl mx-auto px-6 py-8">
+<body>
+  <div class="app">
     <!-- Header -->
-    <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-bold text-lg">M</div>
-      <div>
-        <h1 class="text-xl font-semibold text-white">ModelGate</h1>
-        <p class="text-sm text-gray-500">LLM Proxy Admin</p>
+    <div class="header">
+      <div class="header-logo">M</div>
+      <div class="header-text">
+        <h1>ModelGate</h1>
+        <p>LLM Proxy Admin</p>
       </div>
-      <div id="status-dot" class="ml-auto w-3 h-3 rounded-full bg-green-500" title="Connected"></div>
+      <div class="header-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">connected</span>
+      </div>
     </div>
 
     <!-- Backends -->
-    <section class="mb-8">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-medium text-white">Backends</h2>
-        <button onclick="showAddBackend()" class="px-3 py-1.5 text-sm bg-accent hover:bg-accentHover rounded-lg transition">+ Add Backend</button>
+    <section class="section">
+      <div class="section-header">
+        <span class="section-title">Backends</span>
+        <button class="btn" onclick="showAddBackend()">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add
+        </button>
       </div>
-      <div id="backends-list" class="space-y-3"></div>
+      <div id="backends-list" class="backends-grid"></div>
     </section>
 
     <!-- Routing Rules -->
-    <section class="mb-8">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-medium text-white">Routing Rules</h2>
-        <button onclick="addRule()" class="px-3 py-1.5 text-sm bg-accent hover:bg-accentHover rounded-lg transition">+ Add Rule</button>
+    <section class="section">
+      <div class="section-header">
+        <span class="section-title">Routing Rules</span>
+        <button class="btn" onclick="addRule()">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Rule
+        </button>
       </div>
-      <div class="bg-card rounded-xl border border-border overflow-hidden">
-        <div class="grid grid-cols-12 gap-2 px-4 py-2 text-xs text-gray-500 uppercase tracking-wider border-b border-border">
-          <div class="col-span-1">#</div>
-          <div class="col-span-3">Pattern</div>
-          <div class="col-span-3">Backend</div>
-          <div class="col-span-3">Model Override</div>
-          <div class="col-span-2">Actions</div>
+      <div class="routing-table">
+        <div class="routing-header">
+          <span>#</span>
+          <span>Pattern</span>
+          <span>Backend</span>
+          <span>Model Override</span>
+          <span style="text-align:center">Actions</span>
         </div>
         <div id="rules-list"></div>
-      </div>
-      <div class="mt-3 flex justify-end">
-        <button onclick="saveRules()" class="px-4 py-2 text-sm bg-accent hover:bg-accentHover rounded-lg transition font-medium">Save Rules</button>
+        <div class="routing-footer">
+          <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
+        </div>
       </div>
     </section>
-
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 px-4 py-2 rounded-lg text-sm font-medium opacity-0 transition-opacity duration-300 pointer-events-none"></div>
   </div>
 
-  <!-- Add/Edit Backend Modal -->
-  <div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50" onclick="if(event.target===this)closeModal()">
-    <div class="bg-card rounded-xl border border-border p-6 w-full max-w-md fade-in">
-      <h3 id="modal-title" class="text-lg font-medium text-white mb-4">Add Backend</h3>
-      <form id="backend-form" onsubmit="saveBackend(event)" class="space-y-4">
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Name</label>
-          <input id="be-name" type="text" required class="w-full px-3 py-2 rounded-lg border border-border text-white text-sm focus:outline-none focus:border-accent" placeholder="openrouter">
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h3 id="modal-title">Add Backend</h3>
+      <form id="backend-form" onsubmit="saveBackend(event)">
+        <div class="form-group">
+          <label>Name</label>
+          <input id="be-name" type="text" required class="form-input" placeholder="my-backend">
         </div>
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">URL</label>
-          <input id="be-url" type="text" required class="w-full px-3 py-2 rounded-lg border border-border text-white text-sm focus:outline-none focus:border-accent" placeholder="https://openrouter.ai/api">
+        <div class="form-group">
+          <label>URL</label>
+          <input id="be-url" type="text" required class="form-input" placeholder="https://api.example.com">
         </div>
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">API Key</label>
-          <input id="be-key" type="text" class="w-full px-3 py-2 rounded-lg border border-border text-white text-sm focus:outline-none focus:border-accent" placeholder="sk-or-...">
+        <div class="form-group">
+          <label>API Key</label>
+          <input id="be-key" type="text" class="form-input" placeholder="sk-...">
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">API Mode</label>
-            <select id="be-mode" class="w-full px-3 py-2 rounded-lg border border-border text-white text-sm focus:outline-none focus:border-accent">
-              <option value="">openai (default)</option>
-              <option value="anthropic">anthropic</option>
+        <div class="form-row">
+          <div class="form-group">
+            <label>API Mode</label>
+            <select id="be-mode" class="form-input">
+              <option value="">OpenAI Compatible</option>
+              <option value="anthropic">Anthropic Native</option>
             </select>
+            <div class="form-hint" id="be-mode-hint"></div>
           </div>
-          <div class="flex items-end pb-1">
-            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
-              <input id="be-optimize" type="checkbox" class="rounded accent-accent">
-              Optimize (local models)
-            </label>
-          </div>
+          <label class="form-checkbox">
+            <input id="be-optimize" type="checkbox">
+            Optimize
+          </label>
         </div>
-        <div class="flex gap-3 pt-2">
-          <button type="submit" class="flex-1 px-4 py-2 bg-accent hover:bg-accentHover rounded-lg text-sm font-medium transition">Save</button>
-          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-border hover:bg-gray-600 rounded-lg text-sm transition">Cancel</button>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn" onclick="closeModal()">Cancel</button>
         </div>
       </form>
     </div>
@@ -116,64 +692,79 @@ async function load() {
     backendNames = Object.keys(backends);
     renderBackends();
     renderRules();
+    document.getElementById('status-text').textContent = 'connected';
+    document.getElementById('status-dot').style.background = 'var(--accent-green)';
   } catch (e) {
+    document.getElementById('status-text').textContent = 'disconnected';
+    document.getElementById('status-dot').style.background = 'var(--accent-red)';
     toast('Failed to load config', 'error');
   }
 }
 
-function renderBackends() {
-  const el = document.getElementById('backends-list');
-  el.innerHTML = Object.entries(backends).map(([name, b]) => `
-    <div class="bg-card rounded-xl border border-border p-4 fade-in">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg ${backendColor(name)} flex items-center justify-center text-white text-xs font-bold">${name[0].toUpperCase()}</div>
-          <div>
-            <div class="font-medium text-white">${name}</div>
-            <div class="text-xs text-gray-500">${b.url}</div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          ${b.apiMode ? `<span class="px-2 py-0.5 text-xs rounded bg-purple-900/50 text-purple-300">${b.apiMode}</span>` : ''}
-          ${b.optimize ? '<span class="px-2 py-0.5 text-xs rounded bg-yellow-900/50 text-yellow-300">optimized</span>' : ''}
-          ${b.apiKey ? '<span class="px-2 py-0.5 text-xs rounded bg-green-900/50 text-green-300">key set</span>' : '<span class="px-2 py-0.5 text-xs rounded bg-gray-800 text-gray-500">no key</span>'}
-          <button onclick="editBackend('${name}')" class="ml-2 p-1.5 rounded hover:bg-border transition" title="Edit">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          </button>
-          ${name !== 'anthropic' ? `<button onclick="removeBackend('${name}')" class="p-1.5 rounded hover:bg-red-900/30 text-red-400 transition" title="Delete">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>` : ''}
-        </div>
-      </div>
-    </div>
-  `).join('');
+function resolveApiMode(name, b) {
+  // The "anthropic" backend always uses native Anthropic API regardless of apiMode field
+  if (name === 'anthropic') return 'anthropic';
+  return b.apiMode || 'openai';
 }
 
-function backendColor(name) {
-  const colors = { anthropic: 'bg-orange-600', lmstudio: 'bg-blue-600', openrouter: 'bg-emerald-600' };
-  return colors[name] || 'bg-gray-600';
+function renderBackends() {
+  const el = document.getElementById('backends-list');
+  el.innerHTML = Object.entries(backends).map(([name, b]) => {
+    const iconClass = ['anthropic','lmstudio','openrouter'].includes(name) ? name : 'default';
+    const initial = name[0].toUpperCase();
+    const mode = resolveApiMode(name, b);
+    const modeTag = mode === 'anthropic'
+      ? '<span class="tag tag-mode-anthropic">anthropic</span>'
+      : '<span class="tag tag-mode-openai">openai</span>';
+    const optimizeTag = b.optimize ? '<span class="tag tag-optimized">optimized</span>' : '';
+    const keyTag = b.apiKey
+      ? '<span class="tag tag-key">key set</span>'
+      : '<span class="tag tag-nokey">no key</span>';
+    const deleteBtn = name !== 'anthropic'
+      ? `<button class="btn-icon danger" onclick="removeBackend('${name}')" title="Delete">
+           <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+         </button>`
+      : '';
+    return `
+      <div class="backend-card">
+        <div class="backend-icon ${iconClass}">${initial}</div>
+        <div class="backend-info">
+          <div class="backend-name">${name}</div>
+          <div class="backend-url">${b.url}</div>
+        </div>
+        <div class="backend-tags">
+          ${modeTag}${optimizeTag}${keyTag}
+        </div>
+        <div class="backend-actions">
+          <button class="btn-icon" onclick="editBackend('${name}')" title="Edit">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          ${deleteBtn}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function renderRules() {
   const el = document.getElementById('rules-list');
   el.innerHTML = rules.map((r, i) => `
-    <div class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-border/50 items-center text-sm hover:bg-border/20 transition" data-idx="${i}">
-      <div class="col-span-1 text-gray-500">${i + 1}</div>
-      <div class="col-span-3">
-        <input value="${r.match}" onchange="rules[${i}].match=this.value" class="w-full px-2 py-1 rounded border border-border text-white text-sm focus:outline-none focus:border-accent">
-      </div>
-      <div class="col-span-3">
-        <select onchange="rules[${i}].backend=this.value" class="w-full px-2 py-1 rounded border border-border text-white text-sm focus:outline-none focus:border-accent">
-          ${backendNames.map(n => `<option value="${n}" ${n===r.backend?'selected':''}>${n}</option>`).join('')}
-        </select>
-      </div>
-      <div class="col-span-3">
-        <input value="${r.model||''}" onchange="rules[${i}].model=this.value||undefined" class="w-full px-2 py-1 rounded border border-border text-white text-sm focus:outline-none focus:border-accent" placeholder="(none)">
-      </div>
-      <div class="col-span-2 flex gap-1">
-        <button onclick="moveRule(${i},-1)" class="p-1 rounded hover:bg-border transition ${i===0?'opacity-30':''}" ${i===0?'disabled':''} title="Move up">&#9650;</button>
-        <button onclick="moveRule(${i},1)" class="p-1 rounded hover:bg-border transition ${i===rules.length-1?'opacity-30':''}" ${i===rules.length-1?'disabled':''} title="Move down">&#9660;</button>
-        <button onclick="removeRule(${i})" class="p-1 rounded hover:bg-red-900/30 text-red-400 transition" title="Remove">&times;</button>
+    <div class="routing-row" data-idx="${i}">
+      <span class="row-num">${i + 1}</span>
+      <input value="${r.match}" onchange="rules[${i}].match=this.value" placeholder="*">
+      <select onchange="rules[${i}].backend=this.value">
+        ${backendNames.map(n => `<option value="${n}" ${n===r.backend?'selected':''}>${n}</option>`).join('')}
+      </select>
+      <input value="${r.model||''}" onchange="rules[${i}].model=this.value||undefined" placeholder="(none)">
+      <div class="row-actions">
+        <button class="btn-icon" onclick="moveRule(${i},-1)" ${i===0?'disabled style="opacity:0.25"':''} title="Move up">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="btn-icon" onclick="moveRule(${i},1)" ${i===rules.length-1?'disabled style="opacity:0.25"':''} title="Move down">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="btn-icon danger" onclick="removeRule(${i})" title="Remove">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
     </div>
   `).join('');
@@ -207,11 +798,8 @@ async function saveRules() {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(cleaned),
   });
-  if (res.ok) {
-    toast('Routing rules saved');
-  } else {
-    toast('Failed to save rules', 'error');
-  }
+  if (res.ok) toast('Routing rules saved');
+  else toast('Failed to save rules', 'error');
 }
 
 // ── Backend modal ──
@@ -227,6 +815,7 @@ function showAddBackend() {
   document.getElementById('be-key').value = '';
   document.getElementById('be-mode').value = '';
   document.getElementById('be-optimize').checked = false;
+  document.getElementById('be-mode-hint').textContent = '';
   openModal();
 }
 
@@ -240,6 +829,14 @@ function editBackend(name) {
   document.getElementById('be-key').value = b.apiKey || '';
   document.getElementById('be-mode').value = b.apiMode || '';
   document.getElementById('be-optimize').checked = !!b.optimize;
+
+  // For the "anthropic" backend, show a hint that it always uses native Anthropic API
+  if (name === 'anthropic') {
+    document.getElementById('be-mode-hint').textContent = 'Always uses native Anthropic API';
+  } else {
+    document.getElementById('be-mode-hint').textContent = '';
+  }
+
   openModal();
 }
 
@@ -272,7 +869,7 @@ async function saveBackend(e) {
 }
 
 async function removeBackend(name) {
-  if (!confirm(`Delete backend "${name}"? This also removes its routing rules.`)) return;
+  if (!confirm(`Delete backend "${name}"?`)) return;
   const res = await fetch(`${API}/backends/${name}`, { method: 'DELETE' });
   if (res.ok) {
     toast(`Backend "${name}" deleted`);
@@ -282,17 +879,27 @@ async function removeBackend(name) {
 
 // ── Modal helpers ──
 
-function openModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('modal').classList.add('flex'); }
-function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('modal').classList.remove('flex'); }
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
 
 // ── Toast ──
 
+let toastTimer;
 function toast(msg, type = 'success') {
+  clearTimeout(toastTimer);
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = `fixed bottom-6 right-6 px-4 py-2 rounded-lg text-sm font-medium transition-opacity duration-300 ${type === 'error' ? 'bg-red-900/90 text-red-200' : 'bg-green-900/90 text-green-200'}`;
-  el.style.opacity = '1';
-  setTimeout(() => { el.style.opacity = '0'; }, 2500);
+  el.className = `toast ${type} visible`;
+  toastTimer = setTimeout(() => { el.classList.remove('visible'); }, 2800);
 }
 
 // ── Init ──
