@@ -1,4 +1,4 @@
-import type { AnthropicRequest, AnthropicResponse, OpenAIResponse, OpenAIStreamChunk } from '../types.js';
+import type { AnthropicRequest, AnthropicMessage, AnthropicContentBlock, AnthropicResponse, OpenAIResponse, OpenAIStreamChunk } from '../types.js';
 import { anthropicToOpenAI } from '../transform/anthropic-to-openai.js';
 import {
   openAIToAnthropic,
@@ -15,7 +15,8 @@ export async function forwardToOpenAICompat(
   cfAccessClientId?: string,
   cfAccessClientSecret?: string,
 ): Promise<Response> {
-  const openAIReq = anthropicToOpenAI(req);
+  const stripped = stripToolsFromRequest(req);
+  const openAIReq = anthropicToOpenAI(stripped);
   const url = `${baseUrl}/v1/chat/completions`;
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -122,4 +123,58 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
       'connection': 'keep-alive',
     },
   });
+}
+
+/**
+ * Strip tool definitions and tool-related messages from the request.
+ * Local models can't use Claude Code's tools, and the definitions
+ * add thousands of tokens to every request.
+ *
+ * - Removes tools[] and tool_choice
+ * - Converts tool_use blocks to text summaries
+ * - Converts tool_result blocks to text summaries
+ * - Drops empty messages after stripping
+ */
+function stripToolsFromRequest(req: AnthropicRequest): AnthropicRequest {
+  const messages: AnthropicMessage[] = [];
+
+  for (const msg of req.messages) {
+    if (typeof msg.content === 'string') {
+      messages.push(msg);
+      continue;
+    }
+
+    const newBlocks: AnthropicContentBlock[] = [];
+
+    for (const block of msg.content) {
+      if (block.type === 'tool_use') {
+        newBlocks.push({
+          type: 'text',
+          text: `[Tool call: ${block.name}]`,
+        });
+      } else if (block.type === 'tool_result') {
+        const result = typeof block.content === 'string'
+          ? block.content
+          : '';
+        const truncated = result.length > 500 ? result.slice(0, 500) + '...' : result;
+        newBlocks.push({
+          type: 'text',
+          text: truncated ? `[Tool result: ${truncated}]` : '[Tool result]',
+        });
+      } else {
+        newBlocks.push(block);
+      }
+    }
+
+    if (newBlocks.length > 0) {
+      messages.push({ role: msg.role, content: newBlocks });
+    }
+  }
+
+  return {
+    ...req,
+    messages,
+    tools: undefined,
+    tool_choice: undefined,
+  };
 }
