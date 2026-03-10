@@ -14,7 +14,7 @@
     "llm",
     "proxy",
     "anthropic",
-    "ollama",
+    "lmstudio",
     "routing"
   ],
   "license": "MIT",

@@ -1,99 +1,102 @@
 # ModelGate
 
-An Anthropic-compatible LLM proxy that routes requests to multiple backends.
+Anthropic-compatible LLM proxy that routes requests to multiple backends based on model name.
 
-## Concept
+## How It Works
 
-ModelGate sits between an Anthropic SDK client (like Claude Code) and multiple LLM backends. It accepts requests in **Anthropic Messages API format** (`/v1/messages`) and routes them to:
+ModelGate accepts requests in **Anthropic Messages API format** (`/v1/messages`) and routes them by model name:
 
-- **Anthropic API** — direct passthrough for Claude models
-- **Ollama** — local models (e.g., `qwen2.5-coder:32b`) via OpenAI-compatible API with automatic format translation
+- `claude-*` → **Anthropic API** (direct passthrough)
+- Everything else → **OpenAI-compatible backends** (LM Studio, Ollama, etc.) with automatic format translation
 
 ```
-┌─────────────┐         ┌──────────────┐         ┌──────────────────┐
-│ Claude Code  │ ──────► │  ModelGate   │ ──────► │  Anthropic API   │
-│ (Anthropic   │         │  Proxy       │         │  (Claude models) │
-│  SDK)        │         │              │         └──────────────────┘
-└─────────────┘         │  /v1/messages │
-                        │              │         ┌──────────────────┐
-                        │  Route by    │ ──────► │  Ollama          │
-                        │  model name  │         │  (qwen2.5-coder, │
-                        └──────────────┘         │   llama, etc.)   │
-                                                 └──────────────────┘
+Claude Code / Anthropic SDK
+  │  Authorization: Bearer <anthropic-token>
+  ▼
+ModelGate (/v1/messages)
+  │  Validates token against Anthropic API (60min cache)
+  ├─ claude-*  → api.anthropic.com (token passthrough)
+  └─ qwen*/llama*/* → OpenAI-compatible backend (LM Studio, Ollama, etc.)
 ```
 
-## Why not LiteLLM?
-
-LiteLLM has a beta `/v1/messages` endpoint, but:
-- Heavy Python dependency (~200+ packages)
-- Overkill for a focused routing use case
-- Less control over format translation and error handling
-
-ModelGate is lightweight, TypeScript-native, and purpose-built.
-
-## Features (Planned)
+## Features
 
 - **Anthropic Messages API** — Full `/v1/messages` endpoint (streaming + non-streaming)
-- **Model-based routing** — `claude-*` → Anthropic, everything else → Ollama
-- **Format translation** — Automatic Anthropic ↔ OpenAI format mapping
-  - Messages (system, user, assistant roles)
-  - Tool/function calling
-  - Streaming (SSE)
-- **Configurable routing rules** — YAML/JSON config for model → backend mapping
-- **Request/response logging** — Optional logging for debugging and cost tracking
-- **Zero dependencies on Python** — Pure TypeScript/Node.js
+- **Model-based routing** — Glob-pattern rules in YAML config
+- **Format translation** — Automatic Anthropic ↔ OpenAI format mapping (messages, tool calls, streaming)
+- **Auth** — Validates incoming tokens against Anthropic API with configurable cache TTL
+- **Cloudflare Access** — Optional CF Service Token headers for protected backends
+- **Request logging** — Configurable verbosity (minimal / standard / verbose)
 
-## Tech Stack
+## Quick Start
 
-- **Runtime:** Node.js 22+
-- **Language:** TypeScript
-- **HTTP Framework:** Hono (lightweight, fast)
-- **Config:** YAML
+```bash
+# Install
+npm install
 
-## Configuration (Draft)
+# Development
+npm run dev
+
+# Build + run
+npm run build && npm start
+
+# Docker
+docker compose up -d --build
+```
+
+## Configuration
+
+Copy and edit the config file:
+
+```bash
+cp modelgate.config.yaml modelgate.config.example.yaml
+```
 
 ```yaml
-# modelgate.config.yaml
 server:
   port: 4000
   host: 0.0.0.0
 
+auth:
+  enabled: true
+  cacheTtlMinutes: 60
+
+logging:
+  level: standard  # minimal | standard | verbose
+
 backends:
   anthropic:
     url: https://api.anthropic.com
-    apiKey: ${ANTHROPIC_API_KEY}
 
-  ollama:
-    url: http://localhost:11434
+  lmstudio:
+    url: http://localhost:1234
+    # Optional: Cloudflare Access headers (set via env vars)
 
 routing:
   rules:
     - match: "claude-*"
       backend: anthropic
-    - match: "qwen*"
-      backend: ollama
-    - match: "llama*"
-      backend: ollama
-    - match: "*"  # fallback
-      backend: ollama
+    - match: "*"
+      backend: lmstudio
 ```
 
-## Usage (Draft)
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | API key for Anthropic backend (optional, client can pass its own) |
+| `PORT` | Override server port |
+| `CF_ACCESS_CLIENT_ID` | Cloudflare Access Service Token client ID (for protected backends) |
+| `CF_ACCESS_CLIENT_SECRET` | Cloudflare Access Service Token secret (for protected backends) |
+
+## Usage with Claude Code
 
 ```bash
-# Start the proxy
-modelgate start
-
-# Or with config
-modelgate start --config modelgate.config.yaml
-
-# Point Claude Code at the proxy
-export ANTHROPIC_BASE_URL=http://localhost:4000
+export ANTHROPIC_BASE_URL=https://modelgate.skyvu.de  # or http://localhost:4000
+# Auth works automatically — Claude Code's OAuth token validates against Anthropic
 ```
 
 ## Format Translation
-
-The core challenge is translating between Anthropic and OpenAI message formats:
 
 | Feature | Anthropic Format | OpenAI Format |
 |---------|-----------------|---------------|
@@ -103,6 +106,33 @@ The core challenge is translating between Anthropic and OpenAI message formats:
 | Tool results | `content[].type: "tool_result"` | `{"role": "tool"}` message |
 | Streaming | SSE with `message_start`, `content_block_delta` | SSE with `chat.completion.chunk` |
 | Stop reason | `stop_reason: "end_turn"` | `finish_reason: "stop"` |
+
+## Project Structure
+
+```
+src/
+├── index.ts                          # Hono server + auth middleware
+├── auth.ts                           # Token validation (Anthropic API, cached)
+├── config.ts                         # YAML config loader + env overrides
+├── router.ts                         # Model → backend routing (glob matching)
+├── logger.ts                         # Request/response logging
+├── types.ts                          # Anthropic + OpenAI type definitions
+├── backends/
+│   ├── anthropic.ts                  # Anthropic API passthrough
+│   └── openai-compat.ts             # OpenAI-compatible backend (LM Studio, etc.)
+├── transform/
+│   ├── anthropic-to-openai.ts        # Request format: Anthropic → OpenAI
+│   └── openai-to-anthropic.ts        # Response format: OpenAI → Anthropic
+└── routes/
+    └── messages.ts                   # POST /v1/messages handler
+```
+
+## Tech Stack
+
+- **Runtime:** Node.js 22
+- **Language:** TypeScript
+- **HTTP:** Hono
+- **Config:** YAML
 
 ## License
 
