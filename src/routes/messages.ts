@@ -4,6 +4,7 @@ import type { AnthropicRequest, AnthropicResponse } from '../types.js';
 import { resolveBackend } from '../router.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOpenAICompat } from '../backends/openai-compat.js';
+import { forwardToLocalAnthropic } from '../backends/local-anthropic.js';
 import {
   logRequest, logResponseSync, logStreamStart, logStreamResponse,
   logResponseError, logError,
@@ -67,9 +68,13 @@ export function createMessagesRoute(config: Config): Hono {
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
         const backendConfig = config.backends[backend.backendName];
-        upstreamRes = await forwardToOpenAICompat(
-          body, backend.url, backendConfig?.apiKey, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret,
-        );
+        if (backendConfig?.apiMode === 'anthropic') {
+          upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey);
+        } else {
+          upstreamRes = await forwardToOpenAICompat(
+            body, backend.url, backendConfig?.apiKey, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret,
+          );
+        }
       }
 
       const responseHeaders = new Headers();

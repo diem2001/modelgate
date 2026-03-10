@@ -5,6 +5,7 @@ import { parse } from 'yaml';
 export interface BackendConfig {
   url: string;
   apiKey?: string;
+  apiMode?: 'openai' | 'anthropic';
   cfAccessClientId?: string;
   cfAccessClientSecret?: string;
 }
@@ -82,6 +83,9 @@ function applyEnvOverrides(config: Config): Config {
   }
   if (process.env.LMSTUDIO_API_KEY && config.backends.lmstudio) {
     config.backends.lmstudio.apiKey = process.env.LMSTUDIO_API_KEY;
+  }
+  if (process.env.LMSTUDIO_API_MODE && config.backends.lmstudio) {
+    config.backends.lmstudio.apiMode = process.env.LMSTUDIO_API_MODE as 'openai' | 'anthropic';
   }
   if (process.env.CF_ACCESS_CLIENT_ID && config.backends.lmstudio) {
     config.backends.lmstudio.cfAccessClientId = process.env.CF_ACCESS_CLIENT_ID;

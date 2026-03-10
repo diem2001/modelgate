@@ -19,7 +19,10 @@ backends:
     # Auth is passed through from the client's original token
 
   lmstudio:
-    # LM Studio OpenAI-compatible API (via SSH tunnel from Mac)
+    # LM Studio local API (via SSH tunnel from Mac)
+    # apiMode: openai (default) = /v1/chat/completions
+    # apiMode: anthropic = /v1/messages (supports tool use)
+    # Override via LMSTUDIO_API_MODE env var
     url: http://host.docker.internal:11234
 
 routing:
