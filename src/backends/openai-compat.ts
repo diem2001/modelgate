@@ -28,9 +28,19 @@ export async function forwardToOpenAICompat(
     headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
   }
 
-  const body = JSON.stringify(openAIReq, null, 2);
+  const body = JSON.stringify(openAIReq);
+  // Pretty-print payload with readable message content
+  const displayReq = {
+    ...openAIReq,
+    messages: openAIReq.messages.map(m => ({
+      ...m,
+      content: typeof m.content === 'string' && m.content.length > 200
+        ? m.content.slice(0, 200) + `... (${m.content.length} chars)`
+        : m.content,
+    })),
+  };
   console.log(`\n\x1b[2m┌── OUTGOING PAYLOAD → ${url} ──┐\x1b[0m`);
-  console.log(body);
+  console.log(JSON.stringify(displayReq, null, 2));
   console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
 
   const upstreamRes = await fetch(url, {
@@ -154,7 +164,22 @@ function trimContextForLocalModel(req: AnthropicRequest): AnthropicRequest {
     ? messages.slice(1)
     : messages;
 
-  return { ...req, system, messages: trimmed };
+  // Clean Claude Code noise from message content
+  const cleaned = trimmed.map(msg => {
+    if (typeof msg.content !== 'string') return msg;
+    let text = msg.content;
+    // Strip XML tags (command-name, local-command-stdout, system-reminder, etc.)
+    text = text.replace(/<[^>]+>[^<]*<\/[^>]+>/g, '');
+    text = text.replace(/<[^>]+>/g, '');
+    // Strip [Request interrupted by user] markers
+    text = text.replace(/\[Request interrupted by user\]/g, '');
+    // Collapse whitespace
+    text = text.replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    return { ...msg, content: text };
+  }).filter((msg): msg is AnthropicMessage => msg !== null);
+
+  return { ...req, system, messages: cleaned };
 }
 
 /**
