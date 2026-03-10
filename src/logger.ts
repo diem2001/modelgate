@@ -79,6 +79,18 @@ export function logRequest(req: AnthropicRequest, backendName: string) {
   }
 }
 
+export function logResponseBody(content: AnthropicContentBlock[]) {
+  if (config.level === 'minimal') return;
+  for (const block of content) {
+    if (block.type === 'text' && block.text) {
+      console.log(`  ${dim('assistant:')} ${truncate(block.text, 200)}`);
+    } else if (block.type === 'tool_use') {
+      const args = truncate(JSON.stringify(block.input), 120);
+      console.log(`  ${dim('tool_use:')} ${yellow(block.name ?? '?')}(${args})`);
+    }
+  }
+}
+
 export function logResponse(
   model: string,
   backendName: string,
@@ -97,6 +109,18 @@ export function logStreamStart(model: string, backendName: string) {
   if (config.level === 'minimal') return;
   const ts = dim(timestamp());
   console.log(`${ts} ${cyan(model)} ← ${bold(backendName)} ${yellow('streaming...')}`);
+}
+
+export function logStreamContent(text: string) {
+  if (config.level === 'minimal') return;
+  if (text) {
+    console.log(`  ${dim('assistant:')} ${truncate(text, 200)}`);
+  }
+}
+
+export function logStreamToolUse(name: string, args: string) {
+  if (config.level === 'minimal') return;
+  console.log(`  ${dim('tool_use:')} ${yellow(name)}(${truncate(args, 120)})`);
 }
 
 export function logStreamEnd(model: string, backendName: string, durationMs: number) {

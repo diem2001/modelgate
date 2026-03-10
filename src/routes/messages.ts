@@ -1,10 +1,14 @@
 import { Hono } from 'hono';
 import type { Config } from '../config.js';
-import type { AnthropicRequest } from '../types.js';
+import type { AnthropicRequest, AnthropicResponse } from '../types.js';
 import { resolveBackend } from '../router.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOllama } from '../backends/ollama.js';
-import { logRequest, logResponse, logStreamStart, logStreamEnd, logError } from '../logger.js';
+import {
+  logRequest, logResponse, logResponseBody,
+  logStreamStart, logStreamEnd, logStreamContent, logStreamToolUse,
+  logError,
+} from '../logger.js';
 
 export function createMessagesRoute(config: Config): Hono {
   const app = new Hono();
@@ -54,33 +58,21 @@ export function createMessagesRoute(config: Config): Hono {
       const contentType = upstreamRes.headers.get('content-type');
       if (contentType) responseHeaders.set('content-type', contentType);
 
-      if (body.stream) {
+      if (body.stream && upstreamRes.body) {
         logStreamStart(body.model, backend.backendName);
-        // Wrap the stream to log when it completes
-        const originalBody = upstreamRes.body;
-        if (originalBody) {
-          const reader = originalBody.getReader();
-          const stream = new ReadableStream({
-            async pull(controller) {
-              const { done, value } = await reader.read();
-              if (done) {
-                logStreamEnd(body.model, backend.backendName, Date.now() - startTime);
-                controller.close();
-              } else {
-                controller.enqueue(value);
-              }
-            },
-            cancel() {
-              reader.cancel();
-            },
-          });
-          return new Response(stream, { status: upstreamRes.status, headers: responseHeaders });
-        }
+        return createLoggingStream(upstreamRes, responseHeaders, body.model, backend.backendName, startTime);
       }
 
+      // Sync response: read body, log it, return it
+      const responseBody = await upstreamRes.text();
       logResponse(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime);
 
-      return new Response(upstreamRes.body, {
+      try {
+        const parsed = JSON.parse(responseBody) as AnthropicResponse;
+        if (parsed.content) logResponseBody(parsed.content);
+      } catch { /* not JSON or unexpected format */ }
+
+      return new Response(responseBody, {
         status: upstreamRes.status,
         headers: responseHeaders,
       });
@@ -94,4 +86,73 @@ export function createMessagesRoute(config: Config): Hono {
   });
 
   return app;
+}
+
+function createLoggingStream(
+  upstreamRes: Response,
+  responseHeaders: Headers,
+  model: string,
+  backendName: string,
+  startTime: number,
+): Response {
+  const reader = upstreamRes.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let streamedText = '';
+  const toolCalls = new Map<number, { name: string; args: string }>();
+
+  const stream = new ReadableStream({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        // Log collected response
+        if (streamedText) logStreamContent(streamedText);
+        for (const tc of toolCalls.values()) {
+          logStreamToolUse(tc.name, tc.args);
+        }
+        logStreamEnd(model, backendName, Date.now() - startTime);
+        controller.close();
+        return;
+      }
+
+      // Pass data through immediately
+      controller.enqueue(value);
+
+      // Parse SSE events for logging
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+
+        try {
+          const event = JSON.parse(data);
+          if (event.type === 'content_block_delta') {
+            if (event.delta?.type === 'text_delta' && event.delta.text) {
+              streamedText += event.delta.text;
+            } else if (event.delta?.type === 'input_json_delta' && event.delta.partial_json) {
+              const idx = event.index ?? 0;
+              const tc = toolCalls.get(idx);
+              if (tc) tc.args += event.delta.partial_json;
+            }
+          } else if (event.type === 'content_block_start') {
+            if (event.content_block?.type === 'tool_use') {
+              toolCalls.set(event.index ?? 0, {
+                name: event.content_block.name ?? '?',
+                args: '',
+              });
+            }
+          }
+        } catch { /* skip unparseable */ }
+      }
+    },
+    cancel() {
+      reader.cancel();
+    },
+  });
+
+  return new Response(stream, { status: upstreamRes.status, headers: responseHeaders });
 }
