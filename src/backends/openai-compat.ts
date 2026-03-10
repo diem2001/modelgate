@@ -31,12 +31,20 @@ export async function forwardToOpenAICompat(
 
   if (!upstreamRes.ok) {
     const errorText = await upstreamRes.text();
+
+    // Extract meaningful error from HTML pages (e.g. Cloudflare error pages)
+    let message: string;
+    if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+      const titleMatch = errorText.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const title = titleMatch?.[1]?.trim() ?? `HTTP ${upstreamRes.status}`;
+      message = `Backend error (${upstreamRes.status}): ${title}`;
+    } else {
+      message = `Backend error (${upstreamRes.status}): ${errorText}`;
+    }
+
     return new Response(JSON.stringify({
       type: 'error',
-      error: {
-        type: 'api_error',
-        message: `Backend error (${upstreamRes.status}): ${errorText}`,
-      },
+      error: { type: 'api_error', message },
     }), {
       status: upstreamRes.status,
       headers: { 'content-type': 'application/json' },
