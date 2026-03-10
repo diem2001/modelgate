@@ -12,10 +12,15 @@ export interface RoutingRule {
   backend: string;
 }
 
+export interface LoggingConfig {
+  level: 'minimal' | 'standard' | 'verbose';
+}
+
 export interface Config {
   server: { port: number; host: string };
   backends: Record<string, BackendConfig>;
   routing: { rules: RoutingRule[] };
+  logging: LoggingConfig;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -30,6 +35,7 @@ const DEFAULT_CONFIG: Config = {
       { match: '*', backend: 'ollama' },
     ],
   },
+  logging: { level: 'standard' },
 };
 
 export function loadConfig(configPath?: string): Config {
@@ -50,6 +56,7 @@ export function loadConfig(configPath?: string): Config {
     server: { ...DEFAULT_CONFIG.server, ...parsed.server },
     backends: { ...DEFAULT_CONFIG.backends, ...parsed.backends },
     routing: parsed.routing ?? DEFAULT_CONFIG.routing,
+    logging: { ...DEFAULT_CONFIG.logging, ...parsed.logging },
   };
 
   return applyEnvOverrides(config);

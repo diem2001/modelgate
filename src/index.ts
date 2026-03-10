@@ -2,9 +2,12 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { loadConfig } from './config.js';
 import { createMessagesRoute } from './routes/messages.js';
+import { initLogger } from './logger.js';
 
 const configPath = process.argv[2];
 const config = loadConfig(configPath);
+
+initLogger(config.logging);
 
 const app = new Hono();
 

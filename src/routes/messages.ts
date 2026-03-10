@@ -4,6 +4,7 @@ import type { AnthropicRequest } from '../types.js';
 import { resolveBackend } from '../router.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOllama } from '../backends/ollama.js';
+import { logRequest, logResponse, logStreamStart, logStreamEnd, logError } from '../logger.js';
 
 export function createMessagesRoute(config: Config): Hono {
   const app = new Hono();
@@ -30,8 +31,8 @@ export function createMessagesRoute(config: Config): Hono {
       return c.json({ type: 'error', error: { type: 'invalid_request_error', message: (err as Error).message } }, 400);
     }
 
-    const logPrefix = `[${body.model} → ${backend.backendName}]`;
-    console.log(`${logPrefix} ${body.stream ? 'stream' : 'sync'} | ${body.messages.length} messages | max_tokens=${body.max_tokens}`);
+    logRequest(body, backend.backendName);
+    const startTime = Date.now();
 
     try {
       let upstreamRes: Response;
@@ -41,7 +42,6 @@ export function createMessagesRoute(config: Config): Hono {
         for (const [key, value] of Object.entries(c.req.header())) {
           if (typeof value === 'string') headers[key] = value;
         }
-        // Auth is passed through from client (OAuth Bearer or API key)
         if (!headers['authorization'] && !headers['x-api-key'] && !backend.apiKey) {
           return c.json({ type: 'error', error: { type: 'authentication_error', message: 'No authentication provided (send Authorization or x-api-key header)' } }, 401);
         }
@@ -50,17 +50,42 @@ export function createMessagesRoute(config: Config): Hono {
         upstreamRes = await forwardToOllama(body, backend.url);
       }
 
-      // Pass through the response
       const responseHeaders = new Headers();
       const contentType = upstreamRes.headers.get('content-type');
       if (contentType) responseHeaders.set('content-type', contentType);
+
+      if (body.stream) {
+        logStreamStart(body.model, backend.backendName);
+        // Wrap the stream to log when it completes
+        const originalBody = upstreamRes.body;
+        if (originalBody) {
+          const reader = originalBody.getReader();
+          const stream = new ReadableStream({
+            async pull(controller) {
+              const { done, value } = await reader.read();
+              if (done) {
+                logStreamEnd(body.model, backend.backendName, Date.now() - startTime);
+                controller.close();
+              } else {
+                controller.enqueue(value);
+              }
+            },
+            cancel() {
+              reader.cancel();
+            },
+          });
+          return new Response(stream, { status: upstreamRes.status, headers: responseHeaders });
+        }
+      }
+
+      logResponse(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime);
 
       return new Response(upstreamRes.body, {
         status: upstreamRes.status,
         headers: responseHeaders,
       });
     } catch (err) {
-      console.error(`${logPrefix} Error:`, err);
+      logError(body.model, backend.backendName, err as Error);
       return c.json({
         type: 'error',
         error: { type: 'api_error', message: `Backend error: ${(err as Error).message}` },
