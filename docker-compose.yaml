@@ -5,9 +5,11 @@ services:
       - "4000:4000"
     volumes:
       - ./modelgate.config.yaml:/app/modelgate.config.yaml:ro
+      - ./data:/app/data
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LMSTUDIO_API_KEY=${LMSTUDIO_API_KEY}
+      - LMSTUDIO_API_MODE=${LMSTUDIO_API_MODE}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

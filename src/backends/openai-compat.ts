@@ -14,9 +14,10 @@ export async function forwardToOpenAICompat(
   apiKey?: string,
   cfAccessClientId?: string,
   cfAccessClientSecret?: string,
+  optimize = true,
 ): Promise<Response> {
-  const optimized = trimContextForLocalModel(stripToolsFromRequest(req));
-  const openAIReq = anthropicToOpenAI(optimized);
+  const prepared = optimize ? trimContextForLocalModel(stripToolsFromRequest(req)) : req;
+  const openAIReq = anthropicToOpenAI(prepared);
   const url = `${baseUrl}/v1/chat/completions`;
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };

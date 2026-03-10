@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import type { Config } from '../config.js';
 import type { AnthropicRequest, AnthropicResponse } from '../types.js';
 import { resolveBackend } from '../router.js';
+import { getConfig } from '../config-store.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOpenAICompat } from '../backends/openai-compat.js';
 import { forwardToLocalAnthropic } from '../backends/local-anthropic.js';
@@ -10,10 +10,12 @@ import {
   logResponseError, logError,
 } from '../logger.js';
 
-export function createMessagesRoute(config: Config): Hono {
+export function createMessagesRoute(): Hono {
   const app = new Hono();
 
   app.post('/v1/messages', async (c) => {
+    const config = getConfig();
+
     let body: AnthropicRequest;
     try {
       body = await c.req.json<AnthropicRequest>();
@@ -71,8 +73,9 @@ export function createMessagesRoute(config: Config): Hono {
         if (backendConfig?.apiMode === 'anthropic') {
           upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey);
         } else {
+          const optimize = backendConfig?.optimize !== false; // default true
           upstreamRes = await forwardToOpenAICompat(
-            body, backend.url, backendConfig?.apiKey, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret,
+            body, backend.url, backendConfig?.apiKey, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret, optimize,
           );
         }
       }

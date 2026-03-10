@@ -24,6 +24,12 @@ backends:
     # apiMode: anthropic = /v1/messages (supports tool use)
     # Override via LMSTUDIO_API_MODE env var
     url: http://host.docker.internal:11234
+    optimize: true
+
+  openrouter:
+    url: https://openrouter.ai/api
+    # apiKey set via OPENROUTER_API_KEY env var
+    optimize: false
 
 routing:
   rules:
@@ -36,5 +42,7 @@ routing:
       backend: lmstudio
     - match: "llama*"
       backend: lmstudio
+    - match: "openrouter/*"
+      backend: openrouter
     - match: "*"
       backend: lmstudio
