@@ -79,6 +79,9 @@ function applyEnvOverrides(config: Config): Config {
   if (process.env.PORT) {
     config.server.port = parseInt(process.env.PORT, 10);
   }
+  if (process.env.LMSTUDIO_API_KEY && config.backends.lmstudio) {
+    config.backends.lmstudio.apiKey = process.env.LMSTUDIO_API_KEY;
+  }
   if (process.env.CF_ACCESS_CLIENT_ID && config.backends.lmstudio) {
     config.backends.lmstudio.cfAccessClientId = process.env.CF_ACCESS_CLIENT_ID;
   }

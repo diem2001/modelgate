@@ -11,6 +11,7 @@ import {
 export async function forwardToOpenAICompat(
   req: AnthropicRequest,
   baseUrl: string,
+  apiKey?: string,
   cfAccessClientId?: string,
   cfAccessClientSecret?: string,
 ): Promise<Response> {
@@ -18,6 +19,9 @@ export async function forwardToOpenAICompat(
   const url = `${baseUrl}/v1/chat/completions`;
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (apiKey) {
+    headers['authorization'] = `Bearer ${apiKey}`;
+  }
   if (cfAccessClientId && cfAccessClientSecret) {
     headers['CF-Access-Client-Id'] = cfAccessClientId;
     headers['CF-Access-Client-Secret'] = cfAccessClientSecret;

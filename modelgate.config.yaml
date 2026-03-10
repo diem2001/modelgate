@@ -19,8 +19,8 @@ backends:
     # Auth is passed through from the client's original token
 
   lmstudio:
-    # LM Studio OpenAI-compatible API (local or via Cloudflare tunnel)
-    url: http://localhost:1234
+    # LM Studio OpenAI-compatible API (via SSH tunnel from Mac)
+    url: http://localhost:11234
 
 routing:
   rules:
