@@ -125,35 +125,39 @@ export function logRequest(req: AnthropicRequest, backendName: string) {
 
   if (config.level === 'minimal') return;
 
-  console.log(midLine('INPUT'));
-
-  // Always show only the LAST user message (the actual new input)
-  const lastUser = [...req.messages].reverse().find(m => m.role === 'user');
-  if (lastUser) {
-    const text = extractText(lastUser.content);
-    const toolResults = extractToolResults(lastUser.content);
-
-    if (text) {
-      const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
-      console.log(row(`${c.blue('▶')}  ${wrapped.join('\n')}`));
-    }
-    if (toolResults > 0) {
-      console.log(row(`   ${c.dim(`+ ${toolResults} tool result(s)`)}`));
+  // System prompt
+  if (req.system) {
+    console.log(midLine('SYSTEM'));
+    const systemText = typeof req.system === 'string'
+      ? req.system
+      : extractText(req.system);
+    const wrapped = wrap(systemText, `${c.dim('│')}     `, W - 6);
+    for (const line of wrapped) {
+      console.log(row(c.dim(line)));
     }
   }
 
-  // In verbose mode, also show the last assistant message before this
-  // (gives context for multi-turn tool use flows)
-  if (config.level === 'verbose') {
-    const lastAssistant = [...req.messages].reverse().find(m => m.role === 'assistant');
-    if (lastAssistant) {
-      const toolUses = extractToolUses(lastAssistant.content);
-      if (toolUses.length > 0) {
-        console.log(row(c.dim('  previous assistant called:')));
-        for (const t of toolUses) {
-          console.log(row(`   ${c.yellow('⚡')} ${c.bold(t.name)}(${c.dim(t.args)})`));
-        }
-      }
+  // Messages
+  console.log(midLine(`MESSAGES (${req.messages.length})`));
+
+  for (const msg of req.messages) {
+    const roleIcon = msg.role === 'user' ? c.blue('▶ USR') : c.green('◀ AST');
+    const text = extractText(msg.content);
+    const toolUses = extractToolUses(msg.content);
+    const toolResults = extractToolResults(msg.content);
+
+    if (text) {
+      const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
+      console.log(row(`${roleIcon}  ${wrapped.join('\n')}`));
+    } else if (!toolUses.length && !toolResults) {
+      console.log(row(`${roleIcon}  ${c.dim('(empty)')}`));
+    }
+
+    for (const t of toolUses) {
+      console.log(row(`   ${c.yellow('⚡')} ${c.bold(t.name)}(${c.dim(t.args)})`));
+    }
+    if (toolResults > 0) {
+      console.log(row(`   ${c.dim(`+ ${toolResults} tool result(s)`)}`));
     }
   }
 }
