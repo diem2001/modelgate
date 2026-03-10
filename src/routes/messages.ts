@@ -35,6 +35,29 @@ export function createMessagesRoute(config: Config): Hono {
     }
 
     logRequest(body, backend.backendName);
+
+    // Log incoming Anthropic payload
+    const displayBody = {
+      ...body,
+      system: typeof body.system === 'string' && body.system.length > 200
+        ? body.system.slice(0, 200) + `... (${body.system.length} chars)`
+        : body.system,
+      messages: body.messages.map(m => ({
+        role: m.role,
+        content: typeof m.content === 'string' && m.content.length > 200
+          ? m.content.slice(0, 200) + `... (${m.content.length} chars)`
+          : Array.isArray(m.content)
+            ? m.content.map(b => b.type === 'text' && b.text && b.text.length > 200
+              ? { ...b, text: b.text.slice(0, 200) + `... (${b.text.length} chars)` }
+              : b)
+            : m.content,
+      })),
+      tools: body.tools ? `[${body.tools.length} tools]` : undefined,
+    };
+    console.log(`\n\x1b[2m┌── INCOMING PAYLOAD (Anthropic) ──┐\x1b[0m`);
+    console.log(JSON.stringify(displayBody, null, 2));
+    console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
+
     const startTime = Date.now();
 
     try {
