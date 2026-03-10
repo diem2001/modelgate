@@ -1,0 +1,22 @@
+server:
+  port: 4000
+  host: 0.0.0.0
+
+backends:
+  anthropic:
+    url: https://api.anthropic.com
+    # apiKey from ANTHROPIC_API_KEY env var
+
+  ollama:
+    url: http://localhost:11434
+
+routing:
+  rules:
+    - match: "claude-*"
+      backend: anthropic
+    - match: "qwen*"
+      backend: ollama
+    - match: "llama*"
+      backend: ollama
+    - match: "*"
+      backend: ollama
