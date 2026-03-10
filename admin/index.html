@@ -849,7 +849,7 @@ async function saveBackend(e) {
     url: document.getElementById('be-url').value.trim(),
     apiKey: document.getElementById('be-key').value.trim() || undefined,
     apiMode: document.getElementById('be-mode').value || undefined,
-    optimize: document.getElementById('be-optimize').checked || undefined,
+    optimize: document.getElementById('be-optimize').checked,
   };
 
   const res = await fetch(`${API}/backends/${name}`, {
