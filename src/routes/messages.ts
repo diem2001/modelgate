@@ -5,9 +5,8 @@ import { resolveBackend } from '../router.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOllama } from '../backends/ollama.js';
 import {
-  logRequest, logResponse, logResponseBody,
-  logStreamStart, logStreamEnd, logStreamContent, logStreamToolUse,
-  logError,
+  logRequest, logResponseSync, logStreamStart, logStreamResponse,
+  logResponseError, logError,
 } from '../logger.js';
 
 export function createMessagesRoute(config: Config): Hono {
@@ -58,19 +57,25 @@ export function createMessagesRoute(config: Config): Hono {
       const contentType = upstreamRes.headers.get('content-type');
       if (contentType) responseHeaders.set('content-type', contentType);
 
+      // Streaming response
       if (body.stream && upstreamRes.body) {
         logStreamStart(body.model, backend.backendName);
         return createLoggingStream(upstreamRes, responseHeaders, body.model, backend.backendName, startTime);
       }
 
-      // Sync response: read body, log it, return it
+      // Sync response
       const responseBody = await upstreamRes.text();
-      logResponse(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime);
-
+      let content: AnthropicResponse['content'] | undefined;
       try {
         const parsed = JSON.parse(responseBody) as AnthropicResponse;
-        if (parsed.content) logResponseBody(parsed.content);
-      } catch { /* not JSON or unexpected format */ }
+        content = parsed.content;
+      } catch { /* not JSON */ }
+
+      if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
+        logResponseSync(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime, content);
+      } else {
+        logResponseError(body.model, backend.backendName, upstreamRes.status, responseBody.slice(0, 200));
+      }
 
       return new Response(responseBody, {
         status: upstreamRes.status,
@@ -105,17 +110,11 @@ function createLoggingStream(
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
-        // Log collected response
-        if (streamedText) logStreamContent(streamedText);
-        for (const tc of toolCalls.values()) {
-          logStreamToolUse(tc.name, tc.args);
-        }
-        logStreamEnd(model, backendName, Date.now() - startTime);
+        logStreamResponse(model, backendName, Date.now() - startTime, streamedText, toolCalls);
         controller.close();
         return;
       }
 
-      // Pass data through immediately
       controller.enqueue(value);
 
       // Parse SSE events for logging
@@ -146,7 +145,7 @@ function createLoggingStream(
               });
             }
           }
-        } catch { /* skip unparseable */ }
+        } catch { /* skip */ }
       }
     },
     cancel() {
