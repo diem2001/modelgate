@@ -7,6 +7,7 @@ services:
       - ./modelgate.config.yaml:/app/modelgate.config.yaml:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LMSTUDIO_API_KEY=${LMSTUDIO_API_KEY}
       - CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID}
       - CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET}
     extra_hosts:
