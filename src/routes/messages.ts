@@ -37,15 +37,15 @@ export function createMessagesRoute(config: Config): Hono {
       let upstreamRes: Response;
 
       if (backend.backendName === 'anthropic') {
-        const apiKey = backend.apiKey ?? c.req.header('x-api-key') ?? '';
-        if (!apiKey) {
-          return c.json({ type: 'error', error: { type: 'authentication_error', message: 'No API key configured for Anthropic backend' } }, 401);
-        }
         const headers: Record<string, string> = {};
         for (const [key, value] of Object.entries(c.req.header())) {
           if (typeof value === 'string') headers[key] = value;
         }
-        upstreamRes = await forwardToAnthropic(body, backend.url, apiKey, headers);
+        // Auth is passed through from client (OAuth Bearer or API key)
+        if (!headers['authorization'] && !headers['x-api-key'] && !backend.apiKey) {
+          return c.json({ type: 'error', error: { type: 'authentication_error', message: 'No authentication provided (send Authorization or x-api-key header)' } }, 401);
+        }
+        upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
         upstreamRes = await forwardToOllama(body, backend.url);
       }
