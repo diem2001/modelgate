@@ -15,8 +15,8 @@ export async function forwardToOpenAICompat(
   cfAccessClientId?: string,
   cfAccessClientSecret?: string,
 ): Promise<Response> {
-  const stripped = stripToolsFromRequest(req);
-  const openAIReq = anthropicToOpenAI(stripped);
+  const optimized = trimContextForLocalModel(stripToolsFromRequest(req));
+  const openAIReq = anthropicToOpenAI(optimized);
   const url = `${baseUrl}/v1/chat/completions`;
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -123,6 +123,33 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
       'connection': 'keep-alive',
     },
   });
+}
+
+/**
+ * Trim context to fit local model constraints.
+ * Claude Code sends the full system prompt (~5k tokens of instructions,
+ * billing headers, skill definitions, system reminders) and full conversation
+ * history. Local models can't handle this volume efficiently.
+ *
+ * - Replaces Claude Code's system prompt with a minimal one
+ * - Keeps only the last 4 messages (2 user/assistant turns) for context
+ */
+function trimContextForLocalModel(req: AnthropicRequest): AnthropicRequest {
+  // Minimal system prompt — just tell the model to be helpful
+  const system = 'You are a helpful coding assistant. Be concise and direct.';
+
+  // Keep only the last N messages for context
+  const maxMessages = 4;
+  const messages = req.messages.length > maxMessages
+    ? req.messages.slice(-maxMessages)
+    : req.messages;
+
+  // Ensure conversation starts with a user message (required by most APIs)
+  const trimmed = messages[0]?.role === 'assistant'
+    ? messages.slice(1)
+    : messages;
+
+  return { ...req, system, messages: trimmed };
 }
 
 /**
