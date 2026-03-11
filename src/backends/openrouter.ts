@@ -1,4 +1,5 @@
 import type { AnthropicRequest, AnthropicMessage, AnthropicContentBlock, OpenAIRequest, OpenAIMessage, OpenAIContentBlock, OpenAITool } from '../types.js';
+import type { ProviderPreferences } from '../config.js';
 import {
   openAIToAnthropic,
   createStreamState,
@@ -17,8 +18,20 @@ export async function forwardToOpenRouter(
   req: AnthropicRequest,
   baseUrl: string,
   apiKey?: string,
+  providerPreferences?: ProviderPreferences,
 ): Promise<Response> {
   const openAIReq = anthropicToOpenRouterFormat(req);
+
+  // Attach OpenRouter provider routing preferences
+  if (providerPreferences) {
+    const provider: OpenAIRequest['provider'] = {};
+    if (providerPreferences.order?.length) provider.order = providerPreferences.order;
+    if (providerPreferences.allow_fallbacks !== undefined) provider.allow_fallbacks = providerPreferences.allow_fallbacks;
+    if (providerPreferences.sort) provider.sort = providerPreferences.sort;
+    if (providerPreferences.require?.length) provider.require = providerPreferences.require;
+    if (providerPreferences.ignore?.length) provider.ignore = providerPreferences.ignore;
+    if (Object.keys(provider).length > 0) openAIReq.provider = provider;
+  }
   const url = `${baseUrl}/v1/chat/completions`;
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };

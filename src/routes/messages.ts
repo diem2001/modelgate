@@ -64,7 +64,7 @@ export function createMessagesRoute(): Hono {
       } else {
         const backendConfig = config.backends[backend.backendName];
         if (backendConfig?.apiMode === 'openrouter') {
-          upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey);
+          upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey, backendConfig.providerPreferences);
         } else if (backendConfig?.apiMode === 'anthropic') {
           upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey);
         } else {

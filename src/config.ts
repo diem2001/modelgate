@@ -2,11 +2,20 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse } from 'yaml';
 
+export interface ProviderPreferences {
+  order?: string[];
+  allow_fallbacks?: boolean;
+  sort?: 'price' | 'throughput' | 'latency';
+  require?: string[];
+  ignore?: string[];
+}
+
 export interface BackendConfig {
   url: string;
   apiKey?: string;
   apiMode?: 'openai' | 'anthropic' | 'openrouter';
   optimize?: boolean; // strip tools + trim context for local models (default: true for lmstudio)
+  providerPreferences?: ProviderPreferences; // OpenRouter-specific provider routing
   cfAccessClientId?: string;
   cfAccessClientSecret?: string;
 }

@@ -91,6 +91,13 @@ export interface OpenAIRequest {
   stream?: boolean;
   tools?: OpenAITool[];
   tool_choice?: unknown;
+  provider?: {
+    order?: string[];
+    allow_fallbacks?: boolean;
+    sort?: string;
+    require?: string[];
+    ignore?: string[];
+  };
 }
 
 export interface OpenAIChoice {
