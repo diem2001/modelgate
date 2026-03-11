@@ -20,56 +20,8 @@ const c = {
   blue:    (s: string) => `\x1b[34m${s}\x1b[0m`,
 };
 
-// ── Helpers ────────────────────────────────────────
-
-const W = 64;
-
 function timestamp(): string {
   return new Date().toLocaleTimeString('en-GB', { hour12: false });
-}
-
-function truncate(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max) + '…';
-}
-
-function wrap(text: string, indent: string, maxWidth: number): string[] {
-  const lines: string[] = [];
-  const words = text.split(/\s+/);
-  let current = '';
-  for (const word of words) {
-    if (current && (current.length + 1 + word.length) > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = current ? `${current} ${word}` : word;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.map((l, i) => i === 0 ? l : `${indent}${l}`);
-}
-
-function topLine(label: string): string {
-  const inner = ` ${label} `;
-  const rest = '─'.repeat(Math.max(0, W - 4 - inner.length));
-  return c.dim(`┌──${inner}${rest}┐`);
-}
-
-function midLine(label?: string): string {
-  if (label) {
-    const inner = ` ${label} `;
-    const rest = '─'.repeat(Math.max(0, W - 4 - inner.length));
-    return c.dim(`├──${inner}${rest}┤`);
-  }
-  return c.dim(`├${'─'.repeat(W - 2)}┤`);
-}
-
-function botLine(): string {
-  return c.dim(`└${'─'.repeat(W - 2)}┘`);
-}
-
-function row(content: string): string {
-  return `${c.dim('│')} ${content}`;
 }
 
 function formatDuration(ms: number): string {
@@ -77,89 +29,63 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-// ── Content extraction ─────────────────────────────
+function truncate(s: string, max: number): string {
+  s = s.replace(/\s+/g, ' ').trim();
+  if (s.length <= max) return s;
+  return s.slice(0, max) + '…';
+}
 
-function extractText(content: string | AnthropicContentBlock[]): string {
-  if (typeof content === 'string') return content;
+// ── Content helpers ────────────────────────────────
+
+function lastUserMessage(req: AnthropicRequest): string {
+  for (let i = req.messages.length - 1; i >= 0; i--) {
+    const msg = req.messages[i];
+    if (msg.role !== 'user') continue;
+    if (typeof msg.content === 'string') return msg.content;
+    const text = msg.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text ?? '')
+      .join(' ');
+    if (text) return text;
+    const toolResults = msg.content.filter(b => b.type === 'tool_result').length;
+    if (toolResults) return `[${toolResults} tool result(s)]`;
+  }
+  return '(empty)';
+}
+
+function extractResponseText(content?: AnthropicContentBlock[]): string {
+  if (!content) return '';
   return content
     .filter(b => b.type === 'text')
     .map(b => b.text ?? '')
     .join(' ');
 }
 
-function extractToolUses(content: string | AnthropicContentBlock[]): Array<{ name: string; args: string }> {
-  if (typeof content === 'string') return [];
+function extractToolNames(content?: AnthropicContentBlock[]): string[] {
+  if (!content) return [];
   return content
     .filter(b => b.type === 'tool_use')
-    .map(b => ({ name: b.name ?? '?', args: JSON.stringify(b.input) }));
-}
-
-function extractToolResults(content: string | AnthropicContentBlock[]): number {
-  if (typeof content === 'string') return 0;
-  return content.filter(b => b.type === 'tool_result').length;
+    .map(b => b.name ?? '?');
 }
 
 // ── Public API ─────────────────────────────────────
 
 export function logRequest(req: AnthropicRequest, backendName: string) {
-  const time = c.dim(timestamp());
-  const model = c.cyan(c.bold(req.model));
-  const backend = c.magenta(backendName);
-  const mode = req.stream ? c.yellow('STREAM') : c.green('SYNC');
+  const turns = req.messages.filter(m => m.role === 'user').length;
+  const tools = req.tools?.length ?? 0;
+  const mode = req.stream ? 'stream' : 'sync';
+  const input = truncate(lastUserMessage(req), 80);
 
-  // Context: count conversation turns and tool activity
-  const turnCount = req.messages.filter(m => m.role === 'user').length;
-  const toolResultCount = req.messages.reduce((acc, m) => acc + extractToolResults(m.content), 0);
+  const meta = [
+    `t${turns}`,
+    `${req.max_tokens}tok`,
+    tools > 0 ? `${tools}tools` : null,
+    mode,
+  ].filter(Boolean).join(' · ');
 
   console.log('');
-  console.log(topLine(time));
-  console.log(row(`${model}  →  ${backend}  ${mode}`));
-
-  // Meta line
-  const meta: string[] = [];
-  meta.push(`turn ${turnCount}`);
-  meta.push(`max=${req.max_tokens}`);
-  if (req.tools?.length) meta.push(`${req.tools.length} tools available`);
-  if (toolResultCount > 0) meta.push(`${toolResultCount} tool results in context`);
-  console.log(row(c.dim(meta.join('  ·  '))));
-
-  if (config.level === 'minimal') return;
-
-  // System prompt
-  if (req.system) {
-    console.log(midLine('SYSTEM'));
-    const systemText = typeof req.system === 'string'
-      ? req.system
-      : extractText(req.system);
-    const wrapped = wrap(systemText, `${c.dim('│')}     `, W - 6);
-    for (const line of wrapped) {
-      console.log(row(c.dim(line)));
-    }
-  }
-
-  // Messages
-  console.log(midLine(`MESSAGES (${req.messages.length})`));
-
-  for (const msg of req.messages) {
-    const roleIcon = msg.role === 'user' ? c.blue('▶ USR') : c.green('◀ AST');
-    const text = extractText(msg.content);
-    const toolUses = extractToolUses(msg.content);
-    const toolResults = extractToolResults(msg.content);
-
-    if (text) {
-      const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
-      console.log(row(`${roleIcon}  ${wrapped.join('\n')}`));
-    } else if (!toolUses.length && !toolResults) {
-      console.log(row(`${roleIcon}  ${c.dim('(empty)')}`));
-    }
-
-    for (const t of toolUses) {
-      console.log(row(`   ${c.yellow('⚡')} ${c.bold(t.name)}(${c.dim(t.args)})`));
-    }
-    if (toolResults > 0) {
-      console.log(row(`   ${c.dim(`+ ${toolResults} tool result(s)`)}`));
-    }
-  }
+  console.log(`${c.dim(timestamp())}  ${c.cyan(c.bold(req.model))} → ${c.magenta(backendName)}  ${c.dim(meta)}`);
+  console.log(`  ${c.blue('▶')} ${input}`);
 }
 
 export function logResponseSync(
@@ -169,22 +95,17 @@ export function logResponseSync(
   durationMs: number,
   content?: AnthropicContentBlock[],
 ) {
-  console.log(midLine('OUTPUT'));
-
-  if (content) {
-    logContentBlocks(content);
-  }
-
   const statusStr = status >= 200 && status < 300 ? c.green(`${status}`) : c.red(`${status}`);
-  const duration = c.bold(formatDuration(durationMs));
+  const text = truncate(extractResponseText(content), 120);
+  const tools = extractToolNames(content);
 
-  console.log(midLine());
-  console.log(row(`${statusStr}  ${duration}`));
-  console.log(botLine());
+  if (text) console.log(`  ${c.green('◀')} ${text}`);
+  if (tools.length) console.log(`  ${c.yellow('⚡')} ${tools.join(', ')}`);
+  console.log(`  ${statusStr} ${c.dim(formatDuration(durationMs))}`);
 }
 
 export function logStreamStart(_model: string, _backendName: string) {
-  // Box stays open from logRequest
+  // nothing — header already printed by logRequest
 }
 
 export function logStreamResponse(
@@ -194,23 +115,12 @@ export function logStreamResponse(
   text: string,
   toolCalls: Map<number, { name: string; args: string }>,
 ) {
-  console.log(midLine('OUTPUT'));
-
-  if (text) {
-    const wrapped = wrap(text, `${c.dim('│')}        `, W - 10);
-    console.log(row(`${c.green('◀')}  ${wrapped.join('\n')}`));
+  if (text) console.log(`  ${c.green('◀')} ${truncate(text, 120)}`);
+  if (toolCalls.size > 0) {
+    const names = [...toolCalls.values()].map(t => t.name).join(', ');
+    console.log(`  ${c.yellow('⚡')} ${names}`);
   }
-  for (const tc of toolCalls.values()) {
-    console.log(row(`   ${c.yellow('⚡')} ${c.bold(tc.name)}(${c.dim(tc.args)})`));
-  }
-  if (!text && toolCalls.size === 0) {
-    console.log(row(c.dim('  (empty response)')));
-  }
-
-  const duration = c.bold(formatDuration(durationMs));
-  console.log(midLine());
-  console.log(row(`${c.green('200')}  ${duration}`));
-  console.log(botLine());
+  console.log(`  ${c.green('200')} ${c.dim(formatDuration(durationMs))}`);
 }
 
 export function logResponseError(
@@ -219,33 +129,9 @@ export function logResponseError(
   status: number,
   message: string,
 ) {
-  console.log(midLine('ERROR'));
-  // Log full error without truncation — wrap lines to box width
-  const errorLines = wrap(message, `${c.dim('│')} `, W - 6);
-  for (const line of errorLines) {
-    console.log(row(c.red(line)));
-  }
-  console.log(midLine());
-  console.log(row(`${c.red(String(status))}`));
-  console.log(botLine());
+  console.log(`  ${c.red(`${status}`)} ${truncate(message, 120)}`);
 }
 
 export function logError(_model: string, _backendName: string, err: Error) {
-  console.log(midLine('ERROR'));
-  console.log(row(c.red(err.message)));
-  console.log(botLine());
-}
-
-// ── Internal ───────────────────────────────────────
-
-function logContentBlocks(content: AnthropicContentBlock[]) {
-  for (const block of content) {
-    if (block.type === 'text' && block.text) {
-      const wrapped = wrap(block.text, `${c.dim('│')}        `, W - 10);
-      console.log(row(`${c.green('◀')}  ${wrapped.join('\n')}`));
-    } else if (block.type === 'tool_use') {
-      const args = JSON.stringify(block.input);
-      console.log(row(`   ${c.yellow('⚡')} ${c.bold(block.name ?? '?')}(${c.dim(args)})`));
-    }
-  }
+  console.log(`  ${c.red('ERR')} ${err.message}`);
 }

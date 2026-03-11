@@ -30,19 +30,6 @@ export async function forwardToOpenAICompat(
   }
 
   const body = JSON.stringify(openAIReq);
-  // Pretty-print payload with readable message content
-  const displayReq = {
-    ...openAIReq,
-    messages: openAIReq.messages.map(m => ({
-      ...m,
-      content: typeof m.content === 'string' && m.content.length > 200
-        ? m.content.slice(0, 200) + `... (${m.content.length} chars)`
-        : m.content,
-    })),
-  };
-  console.log(`\n\x1b[2m┌── OUTGOING PAYLOAD → ${url} ──┐\x1b[0m`);
-  console.log(JSON.stringify(displayReq, null, 2));
-  console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
 
   const upstreamRes = await fetch(url, {
     method: 'POST',

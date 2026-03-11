@@ -44,15 +44,6 @@ export function createMessagesRoute(): Hono {
 
     logRequest(body, backend.backendName);
 
-    // Log incoming Anthropic payload (full, no truncation)
-    const displayBody = {
-      ...body,
-      tools: body.tools ? `[${body.tools.length} tools]` : undefined,
-    };
-    console.log(`\n\x1b[2m┌── INCOMING PAYLOAD (Anthropic) ──┐\x1b[0m`);
-    console.log(JSON.stringify(displayBody, null, 2));
-    console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
-
     const startTime = Date.now();
 
     try {

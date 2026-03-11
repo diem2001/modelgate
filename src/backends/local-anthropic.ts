@@ -21,18 +21,6 @@ export async function forwardToLocalAnthropic(
 
   const body = JSON.stringify(optimized);
 
-  // Log outgoing payload
-  const displayReq = {
-    ...optimized,
-    system: typeof optimized.system === 'string' && optimized.system.length > 200
-      ? optimized.system.slice(0, 200) + `... (${optimized.system.length} chars)`
-      : optimized.system,
-    tools: optimized.tools ? `[${optimized.tools.length} tools: ${optimized.tools.map(t => t.name).join(', ')}]` : undefined,
-  };
-  console.log(`\n\x1b[2m┌── OUTGOING PAYLOAD (Anthropic) → ${url} ──┐\x1b[0m`);
-  console.log(JSON.stringify(displayReq, null, 2));
-  console.log(`\x1b[2m└${'─'.repeat(62)}┘\x1b[0m\n`);
-
   const upstreamRes = await fetch(url, {
     method: 'POST',
     headers,
