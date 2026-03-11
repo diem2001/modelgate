@@ -232,6 +232,10 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
 
             try {
               const chunk = JSON.parse(data) as OpenAIStreamChunk;
+              // Debug: log usage chunks
+              if ((chunk as any).usage) {
+                console.log(`\x1b[2m  [openrouter] usage chunk: ${JSON.stringify((chunk as any).usage)}\x1b[0m`);
+              }
               const events = openAIChunkToAnthropicEvents(chunk, state);
               for (const event of events) {
                 controller.enqueue(encoder.encode(event));
