@@ -172,7 +172,8 @@ function createLoggingStream(
           } else if (event.type === 'message_start' && event.message?.usage) {
             inputTokens = event.message.usage.input_tokens ?? 0;
           } else if (event.type === 'message_delta' && event.usage) {
-            outputTokens = event.usage.output_tokens ?? 0;
+            if (event.usage.input_tokens) inputTokens = event.usage.input_tokens;
+            if (event.usage.output_tokens) outputTokens = event.usage.output_tokens;
           }
         } catch { /* skip */ }
       }

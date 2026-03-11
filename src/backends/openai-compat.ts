@@ -111,6 +111,16 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
           }
         }
 
+        // Emit final usage if available (some providers send it after finish)
+        if (state._inputTokens || state._outputTokens) {
+          const usageEvent = `event: message_delta\ndata: ${JSON.stringify({
+            type: 'message_delta',
+            delta: {},
+            usage: { input_tokens: state._inputTokens, output_tokens: state._outputTokens },
+          })}\n\n`;
+          controller.enqueue(encoder.encode(usageEvent));
+        }
+
         controller.enqueue(encoder.encode(createMessageStopEvent()));
       } finally {
         controller.close();

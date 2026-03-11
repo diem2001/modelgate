@@ -94,7 +94,14 @@ export function createStreamState(model: string): StreamState {
 
 export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: StreamState): string[] {
   const events: string[] = [];
-  const choice = chunk.choices[0];
+
+  // Track usage from any chunk (some providers send it separately)
+  if (chunk.usage) {
+    state._inputTokens = chunk.usage.prompt_tokens ?? state._inputTokens;
+    state._outputTokens = chunk.usage.completion_tokens ?? state._outputTokens;
+  }
+
+  const choice = chunk.choices?.[0];
   if (!choice) return events;
 
   const delta = choice.delta;
@@ -170,12 +177,6 @@ export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: St
         }));
       }
     }
-  }
-
-  // Track usage from any chunk that provides it
-  if (chunk.usage) {
-    state._inputTokens = chunk.usage.prompt_tokens ?? state._inputTokens;
-    state._outputTokens = chunk.usage.completion_tokens ?? state._outputTokens;
   }
 
   // Finish
