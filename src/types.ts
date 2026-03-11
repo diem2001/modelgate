@@ -13,6 +13,7 @@ export interface AnthropicContentBlock {
   input?: unknown;
   tool_use_id?: string;
   content?: string | AnthropicContentBlock[];
+  cache_control?: { type: string; ttl?: string; scope?: string };
 }
 
 export interface AnthropicTool {
@@ -52,9 +53,15 @@ export interface AnthropicResponse {
 
 // OpenAI Chat Completions types (for Ollama)
 
+export interface OpenAIContentBlock {
+  type: 'text';
+  text: string;
+  cache_control?: { type: string; ttl?: string; scope?: string };
+}
+
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
+  content: string | OpenAIContentBlock[] | null;
   tool_calls?: OpenAIToolCall[];
   tool_call_id?: string;
 }

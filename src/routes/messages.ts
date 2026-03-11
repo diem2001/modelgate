@@ -5,6 +5,7 @@ import { getConfig } from '../config-store.js';
 import { forwardToAnthropic } from '../backends/anthropic.js';
 import { forwardToOpenAICompat } from '../backends/openai-compat.js';
 import { forwardToLocalAnthropic } from '../backends/local-anthropic.js';
+import { forwardToOpenRouter } from '../backends/openrouter.js';
 import {
   logRequest, logResponseSync, logStreamStart, logStreamResponse,
   logResponseError, logError,
@@ -61,7 +62,9 @@ export function createMessagesRoute(): Hono {
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
         const backendConfig = config.backends[backend.backendName];
-        if (backendConfig?.apiMode === 'anthropic') {
+        if (backendConfig?.apiMode === 'openrouter') {
+          upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey);
+        } else if (backendConfig?.apiMode === 'anthropic') {
           upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey);
         } else {
           const optimize = backendConfig?.optimize !== false; // default true

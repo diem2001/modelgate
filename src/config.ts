@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 export interface BackendConfig {
   url: string;
   apiKey?: string;
-  apiMode?: 'openai' | 'anthropic';
+  apiMode?: 'openai' | 'anthropic' | 'openrouter';
   optimize?: boolean; // strip tools + trim context for local models (default: true for lmstudio)
   cfAccessClientId?: string;
   cfAccessClientSecret?: string;
@@ -86,7 +86,7 @@ function applyEnvOverrides(config: Config): Config {
     config.backends.lmstudio.apiKey = process.env.LMSTUDIO_API_KEY;
   }
   if (process.env.LMSTUDIO_API_MODE && config.backends.lmstudio) {
-    config.backends.lmstudio.apiMode = process.env.LMSTUDIO_API_MODE as 'openai' | 'anthropic';
+    config.backends.lmstudio.apiMode = process.env.LMSTUDIO_API_MODE as 'openai' | 'anthropic' | 'openrouter';
   }
   if (process.env.OPENROUTER_API_KEY && config.backends.openrouter) {
     config.backends.openrouter.apiKey = process.env.OPENROUTER_API_KEY;

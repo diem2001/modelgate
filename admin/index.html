@@ -297,6 +297,7 @@
     }
     .tag-mode-anthropic { background: var(--accent-amber-dim); color: var(--accent-amber); }
     .tag-mode-openai { background: var(--accent-purple-dim); color: var(--accent-purple); }
+    .tag-mode-openrouter { background: var(--accent-green-dim); color: var(--accent-green); }
     .tag-optimized { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
     .tag-key { background: var(--accent-green-dim); color: var(--accent-green); }
     .tag-nokey { background: rgba(139, 148, 158, 0.08); color: var(--text-muted); }
@@ -659,6 +660,7 @@
             <select id="be-mode" class="form-input">
               <option value="">OpenAI Compatible</option>
               <option value="anthropic">Anthropic Native</option>
+              <option value="openrouter">OpenRouter (OpenAI + Cache)</option>
             </select>
             <div class="form-hint" id="be-mode-hint"></div>
           </div>
@@ -707,15 +709,19 @@ function resolveApiMode(name, b) {
   return b.apiMode || 'openai';
 }
 
+function modeTagClass(mode) {
+  if (mode === 'anthropic') return 'tag-mode-anthropic';
+  if (mode === 'openrouter') return 'tag-mode-openrouter';
+  return 'tag-mode-openai';
+}
+
 function renderBackends() {
   const el = document.getElementById('backends-list');
   el.innerHTML = Object.entries(backends).map(([name, b]) => {
     const iconClass = ['anthropic','lmstudio','openrouter'].includes(name) ? name : 'default';
     const initial = name[0].toUpperCase();
     const mode = resolveApiMode(name, b);
-    const modeTag = mode === 'anthropic'
-      ? '<span class="tag tag-mode-anthropic">anthropic</span>'
-      : '<span class="tag tag-mode-openai">openai</span>';
+    const modeTag = `<span class="tag ${modeTagClass(mode)}">${mode}</span>`;
     const optimizeTag = b.optimize ? '<span class="tag tag-optimized">optimized</span>' : '';
     const keyTag = b.apiKey
       ? '<span class="tag tag-key">key set</span>'
