@@ -1,0 +1,17 @@
+/* JetBrains Mono — Variable font, weights 300-600 */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url(./jetbrains-mono.woff2) format('woff2');
+}
+
+/* Plus Jakarta Sans — Variable font, weights 300-700 */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(./plus-jakarta-sans.woff2) format('woff2');
+}

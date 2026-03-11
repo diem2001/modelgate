@@ -4,12 +4,14 @@ Anthropic-compatible LLM proxy that routes requests to multiple backends based o
 
 ## How It Works
 
-ModelGate accepts requests in **Anthropic Messages API format** (`/v1/messages`) and routes them by model name:
+ModelGate accepts requests in **Anthropic Messages API format** (`/v1/messages`) and routes them to backends based on configurable glob-pattern rules. Routing is fully customizable via the admin panel or config file. Example setup:
 
 - `claude-*` → **Anthropic API** (direct passthrough)
-- `claude-haiku-*` → **OpenRouter** (cost-optimized with prompt caching)
+- `claude-haiku-*` → **OpenRouter** via MiniMax M2.5 (EU provider, cost-optimized with prompt caching)
 - `openrouter/*` → **OpenRouter** (OpenAI-compatible, full payload)
-- Everything else → **Local LLM** (LM Studio via OpenAI or Anthropic API mode)
+- `qwen*` / `llama*` → **Local LLM** (LM Studio via OpenAI or Anthropic API mode)
+
+> **Note:** These are examples from our production setup. All routing rules, model overrides, backend assignments, and provider preferences are fully configurable.
 
 ```
 Claude Code / Anthropic SDK
@@ -18,7 +20,7 @@ Claude Code / Anthropic SDK
 ModelGate (/v1/messages)
   │  Validates token against Anthropic API (60min cache)
   ├─ claude-*       → api.anthropic.com (token passthrough)
-  ├─ claude-haiku-* → openrouter.ai/api (OpenAI + cache_control, provider routing)
+  ├─ claude-haiku-* → openrouter.ai/api via MiniMax M2.5 (EU, prompt caching)
   ├─ openrouter/*   → openrouter.ai/api (OpenAI format, no optimization)
   └─ qwen*/llama*   → LM Studio (OpenAI or Anthropic mode, optimized)
 ```
