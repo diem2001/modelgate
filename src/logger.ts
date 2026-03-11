@@ -94,6 +94,7 @@ export function logResponseSync(
   status: number,
   durationMs: number,
   content?: AnthropicContentBlock[],
+  usage?: { input: number; output: number },
 ) {
   const statusStr = status >= 200 && status < 300 ? c.green(`${status}`) : c.red(`${status}`);
   const text = truncate(extractResponseText(content), 120);
@@ -101,7 +102,8 @@ export function logResponseSync(
 
   if (text) console.log(`  ${c.green('◀')} ${text}`);
   if (tools.length) console.log(`  ${c.yellow('⚡')} ${tools.join(', ')}`);
-  console.log(`  ${statusStr} ${c.dim(formatDuration(durationMs))}`);
+  const usageStr = usage ? `  ${c.dim(`${usage.input}→${usage.output} tok (${usage.input + usage.output})`)}` : '';
+  console.log(`  ${statusStr} ${c.dim(formatDuration(durationMs))}${usageStr}`);
 }
 
 export function logStreamStart(_model: string, _backendName: string) {
@@ -114,13 +116,15 @@ export function logStreamResponse(
   durationMs: number,
   text: string,
   toolCalls: Map<number, { name: string; args: string }>,
+  usage?: { input: number; output: number },
 ) {
   if (text) console.log(`  ${c.green('◀')} ${truncate(text, 120)}`);
   if (toolCalls.size > 0) {
     const names = [...toolCalls.values()].map(t => t.name).join(', ');
     console.log(`  ${c.yellow('⚡')} ${names}`);
   }
-  console.log(`  ${c.green('200')} ${c.dim(formatDuration(durationMs))}`);
+  const usageStr = usage ? `  ${c.dim(`${usage.input}→${usage.output} tok (${usage.input + usage.output})`)}` : '';
+  console.log(`  ${c.green('200')} ${c.dim(formatDuration(durationMs))}${usageStr}`);
 }
 
 export function logResponseError(

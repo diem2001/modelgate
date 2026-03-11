@@ -84,13 +84,17 @@ export function createMessagesRoute(): Hono {
       // Sync response
       const responseBody = await upstreamRes.text();
       let content: AnthropicResponse['content'] | undefined;
+      let usage: { input: number; output: number } | undefined;
       try {
         const parsed = JSON.parse(responseBody) as AnthropicResponse;
         content = parsed.content;
+        if (parsed.usage) {
+          usage = { input: parsed.usage.input_tokens, output: parsed.usage.output_tokens };
+        }
       } catch { /* not JSON */ }
 
       if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
-        logResponseSync(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime, content);
+        logResponseSync(body.model, backend.backendName, upstreamRes.status, Date.now() - startTime, content, usage);
       } else {
         logResponseError(body.model, backend.backendName, upstreamRes.status, responseBody);
       }
@@ -123,12 +127,15 @@ function createLoggingStream(
   let buffer = '';
   let streamedText = '';
   const toolCalls = new Map<number, { name: string; args: string }>();
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   const stream = new ReadableStream({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
-        logStreamResponse(model, backendName, Date.now() - startTime, streamedText, toolCalls);
+        const usage = (inputTokens || outputTokens) ? { input: inputTokens, output: outputTokens } : undefined;
+        logStreamResponse(model, backendName, Date.now() - startTime, streamedText, toolCalls, usage);
         controller.close();
         return;
       }
@@ -162,6 +169,10 @@ function createLoggingStream(
                 args: '',
               });
             }
+          } else if (event.type === 'message_start' && event.message?.usage) {
+            inputTokens = event.message.usage.input_tokens ?? 0;
+          } else if (event.type === 'message_delta' && event.usage) {
+            outputTokens = event.usage.output_tokens ?? 0;
           }
         } catch { /* skip */ }
       }
