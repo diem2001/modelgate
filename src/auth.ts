@@ -64,16 +64,13 @@ function cacheAndValidateOrg(token: string, res: Response, config: AuthConfig): 
   const ttlMs = config.cacheTtlMinutes * 60 * 1000;
   tokenCache.set(token, { validUntil: Date.now() + ttlMs, orgId });
 
-  // Temporary: log org-ID for allowlist setup
-  if (orgId) console.log(`  [auth] org-id: ${orgId}`);
-
   if (!isOrgAllowed(orgId, config.allowedOrgIds)) return false;
   return true;
 }
 
 function isOrgAllowed(orgId: string | undefined, allowedOrgIds: string[] | undefined): boolean {
-  // Temporary: allow all while setting up org-ID allowlist
-  if (!allowedOrgIds || allowedOrgIds.length === 0) return true;
+  // No allowlist configured = deny all (secure by default)
+  if (!allowedOrgIds || allowedOrgIds.length === 0) return false;
   // Allowlist configured but token has no org = deny
   if (!orgId) return false;
   return allowedOrgIds.includes(orgId);
