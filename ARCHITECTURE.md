@@ -42,7 +42,7 @@ ModelGate is a lightweight API proxy that provides a **single Anthropic-compatib
 ## Request Flow
 
 1. **Client** sends a standard Anthropic `/v1/messages` request to `modelgate.skyvu.de`
-2. **Auth middleware** extracts the Bearer token and validates it against `api.anthropic.com/v1/models` (result cached for 60 min). No extra credentials needed — the client's existing Anthropic token is the auth mechanism.
+2. **Auth middleware** extracts the Bearer token and validates it against `api.anthropic.com/v1/models` (result cached, TTL configurable via admin panel, default 60 min). The `anthropic-organization-id` response header is extracted and checked against the org-ID allowlist. If the allowlist is empty, all requests are denied (secure by default).
 3. **Router** matches the `model` field against glob rules in config:
    - `claude-*` → Anthropic API (token passthrough, zero transformation)
    - `claude-haiku-*` → OpenRouter (OpenAI + cache_control, provider routing)
@@ -104,7 +104,7 @@ modelgate.config.yaml          (base config, checked into git)
 ```
 
 - **ConfigStore** (`config-store.ts`): Singleton holding live config. Deep-merges base config with persistent overlay per backend so env overrides are preserved.
-- **Admin API** (`routes/admin-api.ts`): REST endpoints for CRUD on backends and routing rules. Changes written to `data/config.yaml`.
+- **Admin API** (`routes/admin-api.ts`): REST endpoints for CRUD on backends, routing rules, and auth settings (cache TTL, org-ID allowlist). API keys are never exposed — only a boolean `hasApiKey`. Changes written to `data/config.yaml`.
 - **Admin Panel** (`admin/index.html`): SPA at `/admin/` for visual config editing. Protected by Basic Auth.
 - **Persistence**: `data/` directory mounted as Docker volume — survives rebuilds.
 
@@ -112,12 +112,24 @@ modelgate.config.yaml          (base config, checked into git)
 
 | Layer | Mechanism |
 |-------|-----------|
-| Client → ModelGate | Anthropic token validation (delegated auth, cached 60min) |
+| Client → ModelGate | Anthropic token validation (delegated auth, configurable cache TTL) |
+| Org-ID allowlist | `anthropic-organization-id` header checked against allowlist (deny-by-default when empty) |
+| API key protection | Admin API never returns keys — only boolean `hasApiKey` |
 | ModelGate → Anthropic | Token passthrough (same client token) |
 | ModelGate → LM Studio | SSH reverse tunnel (no internet exposure) + API key |
 | ModelGate → OpenRouter | API key (env var or admin panel) |
-| Admin Panel | HTTP Basic Auth (`ADMIN_USER`/`ADMIN_PASSWORD` env vars) |
+| Admin Panel | HTTP Basic Auth (`ADMIN_USER`/`ADMIN_PASSWORD` — required, server refuses to start without it) |
 | Browser → LM Studio | nginx + Let's Encrypt on ai.skyvu.de |
+
+### Auth Flow
+
+1. Client sends request with Anthropic token (Bearer or x-api-key)
+2. ModelGate validates token against `api.anthropic.com/v1/models`
+3. On success, extracts `anthropic-organization-id` from response header
+4. Checks org-ID against configured allowlist (managed via admin panel)
+5. If org-ID not in allowlist → 401 (same error as invalid token, no information leakage)
+6. Valid token + allowed org → cached for configurable TTL (default 60min)
+7. Allowlist changes via admin panel take effect immediately (live config, re-checked even for cached tokens)
 
 ## Logging
 
@@ -153,7 +165,7 @@ Token usage fields shown when available:
 
 ## Key Design Decisions
 
-- **Delegated auth over own user management**: Instead of maintaining a separate user database, ModelGate validates tokens against Anthropic's own API. Anyone with a valid Anthropic key can use the proxy — zero onboarding friction.
+- **Org-ID allowlist over open access**: Tokens are validated against Anthropic's API, but only requests from allowed organizations are accepted. Empty allowlist = deny all (secure by default). Org-IDs are stable (unlike tokens which rotate), making them ideal for access control.
 - **SSH tunnel over Cloudflare Access for LM Studio**: Simpler, faster, no CF dependency. `autossh -R 11234:localhost:1234` from Mac to code1 exposes LM Studio on code1's localhost only.
 - **Per-backend optimization flag**: Cloud backends (Anthropic, OpenRouter) get full payloads. Local models get optimized payloads (stripped tools, trimmed context). Configurable per backend via `optimize` field.
 - **Two-layer config**: Base YAML for version control + persistent overlay for admin panel changes. Deep merge preserves env var overrides.

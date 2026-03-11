@@ -37,8 +37,10 @@ ModelGate (/v1/messages)
 - **Cost tracking** — Full cost breakdown in logs: cached tokens, cache writes, reasoning tokens, dollar cost
 - **Admin panel** — Web UI for live config editing (backends, routing rules, API keys, provider preferences) at `/admin/`
 - **Persistent config** — Changes via admin panel persist across Docker rebuilds (`data/config.yaml`)
+- **Org-ID allowlist** — Restrict access by Anthropic organization ID (deny-by-default when empty)
 - **Auth** — Validates incoming tokens against Anthropic API with configurable cache TTL
-- **Admin Basic Auth** — `/admin/*` protected via `ADMIN_USER`/`ADMIN_PASSWORD` env vars
+- **API key protection** — Admin API never exposes API keys (returns boolean `hasApiKey` only)
+- **Admin Basic Auth** — `/admin/*` protected via `ADMIN_USER`/`ADMIN_PASSWORD` env vars (required, server refuses to start without it)
 - **Compact logging** — One-line per request/response with full token usage and cost breakdown
 
 ## Quick Start
@@ -115,14 +117,21 @@ routing:
 | `LMSTUDIO_API_MODE` | `openai` (default) or `anthropic` for LM Studio |
 | `OPENROUTER_API_KEY` | API key for OpenRouter backend |
 | `ADMIN_USER` | Admin panel username (default: `admin`) |
-| `ADMIN_PASSWORD` | Admin panel password (required to enable Basic Auth) |
+| `ADMIN_PASSWORD` | Admin panel password (**required** — server refuses to start without it) |
 | `PORT` | Override server port |
 
 ### Admin Panel
 
-Live config editor at `/admin/` — edit backends, routing rules, and API keys without restarting. Protected by Basic Auth when `ADMIN_PASSWORD` is set.
+Live config editor at `/admin/` — edit backends, routing rules, API keys, auth settings, and org-ID allowlist without restarting. Protected by Basic Auth (`ADMIN_PASSWORD` is required).
 
 Changes are persisted to `data/config.yaml` and survive Docker rebuilds (mounted as volume).
+
+### Security
+
+- **Org-ID allowlist**: Only requests from allowed Anthropic organizations are accepted. Configure via admin panel or `PUT /admin/api/auth`. When empty, all API requests are denied (secure by default).
+- **API key protection**: The admin API never returns API keys — only a boolean `hasApiKey` indicating whether a key is configured.
+- **Admin fail-fast**: Server refuses to start without `ADMIN_PASSWORD` set, preventing accidental exposure of the admin panel.
+- **Auth cache TTL**: Configurable via admin panel (default: 60 minutes).
 
 ## Backend Modes
 
