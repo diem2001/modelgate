@@ -12,7 +12,7 @@ ModelGate is a lightweight API proxy that provides a **single Anthropic-compatib
               ┌─────────────┴─────────────┐
               │                           │
     modelgate.skyvu.de             ai.skyvu.de
-    (Cloudflare Tunnel)            (nginx + Let's Encrypt)
+    (nginx + Let's Encrypt)        (nginx + Let's Encrypt)
               │                           │
               │                    SSH Reverse Tunnel
               │                    (autossh -R 11234:localhost:1234)
@@ -45,14 +45,17 @@ ModelGate is a lightweight API proxy that provides a **single Anthropic-compatib
 2. **Auth middleware** extracts the Bearer token and validates it against `api.anthropic.com/v1/models` (result cached for 60 min). No extra credentials needed — the client's existing Anthropic token is the auth mechanism.
 3. **Router** matches the `model` field against glob rules in config:
    - `claude-*` → Anthropic API (token passthrough, zero transformation)
-   - `openrouter/*` → OpenRouter (OpenAI format, full payload, no optimization)
+   - `claude-haiku-*` → OpenRouter (OpenAI + cache_control, provider routing)
+   - `openrouter/*` → OpenRouter (OpenAI format, full payload)
    - `qwen*`, `llama*`, `*` → Local LLM (LM Studio)
-4. **Model override** — routing rules can remap model names (e.g., `claude-haiku-*` → `qwen2.5-coder-32b`)
+4. **Model override** — routing rules can remap model names (e.g., `claude-haiku-*` → `minimax/minimax-m2.5`)
 5. **Backend dispatch** — depending on backend type:
    - **Anthropic**: Direct passthrough (auth headers forwarded as-is)
    - **OpenAI-compat**: Anthropic → OpenAI format translation, optional optimization
+   - **OpenRouter**: Anthropic → OpenAI format with `cache_control` preservation + provider routing
    - **Local Anthropic**: Native `/v1/messages` with tool whitelist (Write, Edit, Read, Bash)
 6. **Response** is translated back to Anthropic format (if needed) and streamed to client
+7. **Cost tracking** — Token usage and cost extracted from response/stream and logged
 
 ## Backend Types
 
@@ -72,6 +75,14 @@ When `optimize: true` (default for local models):
 
 When `optimize: false` (cloud backends like OpenRouter):
 - Full payload forwarded including all tools and context
+
+### OpenRouter (`apiMode: openrouter`)
+Dedicated backend for OpenRouter that preserves prompt caching hints:
+- Converts Anthropic content blocks to OpenAI structured blocks with `cache_control` fields
+- Strips `x-anthropic-billing-header` from system prompts (changing hash invalidates cache)
+- Attaches `provider` object for routing preferences (order, sort, fallbacks, ignore)
+- Extracts extended usage from response: cached tokens, cache writes, reasoning tokens, cost
+- Reuses `openai-to-anthropic` streaming transform with extended `StreamState`
 
 ### Local Anthropic Mode
 For backends supporting `/v1/messages` natively (LM Studio with `apiMode: anthropic`):
@@ -110,16 +121,24 @@ modelgate.config.yaml          (base config, checked into git)
 
 ## Logging
 
-Compact one-line format per request:
+Compact one-line format per request with full cost breakdown:
 
 ```
-02:12:52  claude-sonnet-4-6 → anthropic  t5 · 8192tok · 26tools · stream
-  ▶ check the deployment logs
-  ◀ The logs show everything is running correctly...
-  200 3.2s  12840→523 tok (13363)
+13:45:48  minimax/minimax-m2.5 → openrouter via Minimax  t2 · 32000tok · 60tools · stream
+  ▶ What is the capital of France?
+  ◀ The capital of France is Paris.
+  200 1.2s  30154 in · 25933 cached · 24 out · 19 reason  $0.0020
 ```
 
-Shows: timestamp, model, backend, turn count, max_tokens, tool count, mode, last user input (truncated), response preview, status, duration, token usage (input→output).
+Shows: timestamp, model, backend (+ preferred provider), turn count, max_tokens, tool count, mode, last user input (truncated), response preview, status, duration, token usage (input, cached, cache write, output, reasoning), and dollar cost.
+
+Token usage fields shown when available:
+- **in** — input tokens
+- **cached** — cache read tokens (green, indicates cost savings)
+- **write** — cache write tokens
+- **out** — output tokens
+- **reason** — reasoning/thinking tokens
+- **$X.XXXX** — total cost (from OpenRouter)
 
 ## Tech Stack
 
@@ -129,7 +148,7 @@ Shows: timestamp, model, backend, turn count, max_tokens, tool count, mode, last
 | Admin UI | Vanilla JS, JetBrains Mono, dark theme |
 | Containerization | Docker (multi-stage build, ~50 MB image) |
 | LLM Runtime | LM Studio with MLX backend (Apple Silicon optimized) |
-| Networking | SSH reverse tunnel (Mac → code1), Cloudflare Tunnel (code1 → internet) |
+| Networking | SSH reverse tunnel (Mac → code1), nginx + Let's Encrypt (code1 → internet) |
 | Config | YAML (base) + persistent overlay (admin panel) |
 
 ## Key Design Decisions
@@ -139,3 +158,5 @@ Shows: timestamp, model, backend, turn count, max_tokens, tool count, mode, last
 - **Per-backend optimization flag**: Cloud backends (Anthropic, OpenRouter) get full payloads. Local models get optimized payloads (stripped tools, trimmed context). Configurable per backend via `optimize` field.
 - **Two-layer config**: Base YAML for version control + persistent overlay for admin panel changes. Deep merge preserves env var overrides.
 - **Format translation at the proxy**: Clients only speak Anthropic API. The proxy handles all format conversion including streaming SSE events. Claude Code works unmodified — just set `ANTHROPIC_BASE_URL`.
+- **Prompt caching via cache_control passthrough**: OpenRouter accepts `cache_control` on structured content blocks. The dedicated `openrouter` backend preserves these from Anthropic requests instead of flattening to strings. Stripping `x-anthropic-billing-header` prevents cache invalidation from changing hashes.
+- **Provider routing preferences**: OpenRouter-specific `provider` object (order, sort, fallbacks, ignore) configurable via admin panel and persisted in config. Allows pinning requests to specific providers (e.g., Minimax for cost, Anthropic for quality).
