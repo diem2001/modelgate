@@ -87,9 +87,8 @@ backends:
     apiMode: openrouter   # preserves cache_control for prompt caching
     optimize: false       # send full payload (cloud model)
     providerPreferences:  # OpenRouter-specific provider routing
-      order: ["Minimax"]
+      order: ["Inceptron/fp8"]
       allow_fallbacks: false
-      sort: price         # price | throughput | latency
 
 routing:
   rules:
