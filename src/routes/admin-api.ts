@@ -52,6 +52,7 @@ export function createAdminApi(): Hono {
       apiKey,
       apiMode: body.apiMode,
       optimize: body.optimize,
+      providerPreferences: body.providerPreferences,
     };
 
     updateBackend(name, backend);
