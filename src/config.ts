@@ -16,8 +16,6 @@ export interface BackendConfig {
   apiMode?: 'openai' | 'anthropic' | 'openrouter';
   optimize?: boolean; // strip tools + trim context for local models (default: true for lmstudio)
   providerPreferences?: ProviderPreferences; // OpenRouter-specific provider routing
-  cfAccessClientId?: string;
-  cfAccessClientSecret?: string;
 }
 
 export interface RoutingRule {
@@ -99,12 +97,6 @@ function applyEnvOverrides(config: Config): Config {
   }
   if (process.env.OPENROUTER_API_KEY && config.backends.openrouter) {
     config.backends.openrouter.apiKey = process.env.OPENROUTER_API_KEY;
-  }
-  if (process.env.CF_ACCESS_CLIENT_ID && config.backends.lmstudio) {
-    config.backends.lmstudio.cfAccessClientId = process.env.CF_ACCESS_CLIENT_ID;
-  }
-  if (process.env.CF_ACCESS_CLIENT_SECRET && config.backends.lmstudio) {
-    config.backends.lmstudio.cfAccessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
   }
   return config;
 }

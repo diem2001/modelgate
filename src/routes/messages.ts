@@ -71,7 +71,7 @@ export function createMessagesRoute(): Hono {
         } else {
           const optimize = backendConfig?.optimize !== false; // default true
           upstreamRes = await forwardToOpenAICompat(
-            body, backend.url, backendConfig?.apiKey, backendConfig?.cfAccessClientId, backendConfig?.cfAccessClientSecret, optimize,
+            body, backend.url, backendConfig?.apiKey, optimize,
           );
         }
       }

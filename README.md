@@ -114,8 +114,6 @@ routing:
 | `LMSTUDIO_API_KEY` | API key for LM Studio backend |
 | `LMSTUDIO_API_MODE` | `openai` (default) or `anthropic` for LM Studio |
 | `OPENROUTER_API_KEY` | API key for OpenRouter backend |
-| `CF_ACCESS_CLIENT_ID` | Cloudflare Access client ID (for backend auth) |
-| `CF_ACCESS_CLIENT_SECRET` | Cloudflare Access client secret |
 | `ADMIN_USER` | Admin panel username (default: `admin`) |
 | `ADMIN_PASSWORD` | Admin panel password (required to enable Basic Auth) |
 | `PORT` | Override server port |

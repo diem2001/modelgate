@@ -12,8 +12,6 @@ export async function forwardToOpenAICompat(
   req: AnthropicRequest,
   baseUrl: string,
   apiKey?: string,
-  cfAccessClientId?: string,
-  cfAccessClientSecret?: string,
   optimize = true,
 ): Promise<Response> {
   const prepared = optimize ? trimContextForLocalModel(stripToolsFromRequest(req)) : req;
@@ -23,10 +21,6 @@ export async function forwardToOpenAICompat(
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (apiKey) {
     headers['authorization'] = `Bearer ${apiKey}`;
-  }
-  if (cfAccessClientId && cfAccessClientSecret) {
-    headers['CF-Access-Client-Id'] = cfAccessClientId;
-    headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
   }
 
   const body = JSON.stringify(openAIReq);
