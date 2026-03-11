@@ -2,6 +2,7 @@ import type { AuthConfig } from './config.js';
 
 interface CachedToken {
   validUntil: number;
+  orgId?: string;
 }
 
 const tokenCache = new Map<string, CachedToken>();
@@ -19,10 +20,13 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
 
   const cached = tokenCache.get(token);
   if (cached && Date.now() < cached.validUntil) {
+    // Re-check org allowlist even for cached tokens (allowlist may have changed)
+    if (!isOrgAllowed(cached.orgId, config.allowedOrgIds)) return false;
     return true;
   }
 
   try {
+    // Try as x-api-key first
     const res = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
       headers: {
@@ -32,9 +36,7 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
     });
 
     if (res.ok) {
-      const ttlMs = config.cacheTtlMinutes * 60 * 1000;
-      tokenCache.set(token, { validUntil: Date.now() + ttlMs });
-      return true;
+      return cacheAndValidateOrg(token, res, config);
     }
 
     // Try as OAuth Bearer token
@@ -47,9 +49,7 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
     });
 
     if (res2.ok) {
-      const ttlMs = config.cacheTtlMinutes * 60 * 1000;
-      tokenCache.set(token, { validUntil: Date.now() + ttlMs });
-      return true;
+      return cacheAndValidateOrg(token, res2, config);
     }
 
     tokenCache.delete(token);
@@ -57,6 +57,23 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
   } catch {
     return false;
   }
+}
+
+function cacheAndValidateOrg(token: string, res: Response, config: AuthConfig): boolean {
+  const orgId = res.headers.get('anthropic-organization-id') ?? undefined;
+  const ttlMs = config.cacheTtlMinutes * 60 * 1000;
+  tokenCache.set(token, { validUntil: Date.now() + ttlMs, orgId });
+
+  if (!isOrgAllowed(orgId, config.allowedOrgIds)) return false;
+  return true;
+}
+
+function isOrgAllowed(orgId: string | undefined, allowedOrgIds: string[] | undefined): boolean {
+  // No allowlist configured = allow all (open mode)
+  if (!allowedOrgIds || allowedOrgIds.length === 0) return true;
+  // Allowlist configured but token has no org = deny
+  if (!orgId) return false;
+  return allowedOrgIds.includes(orgId);
 }
 
 export function invalidateToken(token: string): void {

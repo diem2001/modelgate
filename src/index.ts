@@ -25,8 +25,12 @@ app.get('/health', (c) => c.json({ status: 'ok', version: '0.2.0' }));
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+if (!ADMIN_PASSWORD) {
+  console.error('\n  ✗ ADMIN_PASSWORD environment variable is required. Refusing to start with unprotected admin panel.\n');
+  process.exit(1);
+}
+
 app.use('/admin/*', async (c, next) => {
-  if (!ADMIN_PASSWORD) return next(); // no password set = no auth
 
   const authHeader = c.req.header('authorization');
   if (authHeader?.startsWith('Basic ')) {
@@ -68,7 +72,7 @@ app.use('/v1/*', async (c, next) => {
     }, 401);
   }
 
-  const valid = await validateToken(token, baseConfig.auth);
+  const valid = await validateToken(token, config.auth);
   if (!valid) {
     return c.json({
       type: 'error',
@@ -102,6 +106,7 @@ console.log(`
   Admin:    http://${config.server.host}:${config.server.port}/admin/
 
   Auth: ${config.auth.enabled ? `enabled (cache TTL: ${config.auth.cacheTtlMinutes}min)` : 'disabled'}
+  Org allowlist: ${config.auth.allowedOrgIds?.length ? config.auth.allowedOrgIds.join(', ') : 'none (all orgs allowed)'}
 
   Backends:`);
 

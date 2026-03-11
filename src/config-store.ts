@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse, stringify } from 'yaml';
-import type { Config, BackendConfig, RoutingRule } from './config.js';
+import type { Config, BackendConfig, RoutingRule, AuthConfig } from './config.js';
 
 const DATA_DIR = resolve(process.cwd(), 'data');
 const CONFIG_FILE = resolve(DATA_DIR, 'config.yaml');
@@ -28,10 +28,14 @@ function loadFromDisk(): Config | null {
 /** Save config to data/config.yaml */
 function saveToDisk(config: Config) {
   ensureDataDir();
-  // Don't persist server/auth/logging — those stay in the static config
-  const persistable = {
+  // Persist backends, routing, and auth cache TTL — server/logging stay in static config
+  const persistable: Record<string, unknown> = {
     backends: config.backends,
     routing: config.routing,
+    auth: {
+      cacheTtlMinutes: config.auth.cacheTtlMinutes,
+      ...(config.auth.allowedOrgIds?.length ? { allowedOrgIds: config.auth.allowedOrgIds } : {}),
+    },
   };
   writeFileSync(CONFIG_FILE, stringify(persistable, { lineWidth: 120 }), 'utf-8');
 }
@@ -50,6 +54,11 @@ export function initConfigStore(baseConfig: Config) {
       ...baseConfig,
       backends: mergedBackends,
       routing: stored.routing ?? baseConfig.routing,
+      auth: {
+        ...baseConfig.auth,
+        ...(stored.auth?.cacheTtlMinutes ? { cacheTtlMinutes: stored.auth.cacheTtlMinutes } : {}),
+        ...(stored.auth?.allowedOrgIds ? { allowedOrgIds: stored.auth.allowedOrgIds } : {}),
+      },
     };
   } else {
     current = baseConfig;
@@ -90,6 +99,18 @@ export function deleteBackend(name: string) {
 export function updateRouting(rules: RoutingRule[]) {
   if (!current) throw new Error('ConfigStore not initialized');
   current.routing.rules = rules;
+  saveToDisk(current);
+}
+
+/** Update auth settings */
+export function updateAuth(auth: Partial<AuthConfig>) {
+  if (!current) throw new Error('ConfigStore not initialized');
+  if (auth.cacheTtlMinutes !== undefined) {
+    current.auth.cacheTtlMinutes = auth.cacheTtlMinutes;
+  }
+  if (auth.allowedOrgIds !== undefined) {
+    current.auth.allowedOrgIds = auth.allowedOrgIds.length > 0 ? auth.allowedOrgIds : undefined;
+  }
   saveToDisk(current);
 }
 

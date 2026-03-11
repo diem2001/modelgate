@@ -31,6 +31,7 @@ export interface LoggingConfig {
 export interface AuthConfig {
   enabled: boolean;
   cacheTtlMinutes: number;
+  allowedOrgIds?: string[]; // Anthropic org IDs allowed to use this proxy. Empty = deny all.
 }
 
 export interface Config {

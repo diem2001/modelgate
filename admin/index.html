@@ -631,6 +631,36 @@
         </div>
       </div>
     </section>
+    <!-- Settings -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-title">Settings</span>
+      </div>
+      <div class="routing-table" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="flex: 1;">
+            <label style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Auth Cache TTL (minutes)</label>
+            <div class="form-hint">How long validated tokens are cached before re-checking with Anthropic</div>
+          </div>
+          <input id="cache-ttl" type="number" min="1" class="form-input" style="width: 100px; text-align: center;" value="60">
+          <button class="btn btn-primary btn-sm" onclick="saveCacheTtl()">Save</button>
+        </div>
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
+            <div>
+              <label style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Allowed Organization IDs</label>
+              <div class="form-hint">Anthropic org IDs permitted to use this proxy. Empty = allow all orgs.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveOrgIds()">Save</button>
+          </div>
+          <div id="org-ids-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+          <button class="btn btn-sm" onclick="addOrgIdRow()" style="margin-top: 8px;">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Org ID
+          </button>
+        </div>
+      </div>
+    </section>
   </div>
 
   <!-- Toast -->
@@ -652,6 +682,11 @@
         <div class="form-group">
           <label>API Key</label>
           <input id="be-key" type="text" class="form-input" placeholder="sk-...">
+          <div id="be-key-status" class="form-hint"></div>
+          <label class="form-checkbox" id="be-clear-key-label" style="display:none; padding-top: 8px;">
+            <input id="be-clear-key" type="checkbox" onchange="toggleClearKey()">
+            Clear existing key
+          </label>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -752,7 +787,7 @@ function renderBackends() {
     const optimizeTag = b.optimize ? '<span class="tag tag-optimized">optimized</span>' : '';
     const providerTag = b.providerPreferences?.order?.length
       ? `<span class="tag tag-mode-openrouter">${b.providerPreferences.order[0]}</span>` : '';
-    const keyTag = b.apiKey
+    const keyTag = b.hasApiKey
       ? '<span class="tag tag-key">key set</span>'
       : '<span class="tag tag-nokey">no key</span>';
     const deleteBtn = name !== 'anthropic'
@@ -841,6 +876,19 @@ async function saveRules() {
 
 let editingBackend = null;
 
+function toggleClearKey() {
+  const clear = document.getElementById('be-clear-key').checked;
+  const keyInput = document.getElementById('be-key');
+  if (clear) {
+    keyInput.disabled = true;
+    keyInput.value = '';
+    keyInput.placeholder = 'Key will be removed on save';
+  } else {
+    keyInput.disabled = false;
+    keyInput.placeholder = 'Leave empty to keep existing key';
+  }
+}
+
 function toggleProviderPrefs() {
   const mode = document.getElementById('be-mode').value;
   document.getElementById('provider-prefs').style.display = mode === 'openrouter' ? 'block' : 'none';
@@ -868,6 +916,11 @@ function showAddBackend() {
   document.getElementById('be-name').disabled = false;
   document.getElementById('be-url').value = '';
   document.getElementById('be-key').value = '';
+  document.getElementById('be-key').disabled = false;
+  document.getElementById('be-key').placeholder = 'sk-...';
+  document.getElementById('be-key-status').textContent = '';
+  document.getElementById('be-clear-key-label').style.display = 'none';
+  document.getElementById('be-clear-key').checked = false;
   document.getElementById('be-mode').value = '';
   document.getElementById('be-optimize').checked = false;
   document.getElementById('be-mode-hint').textContent = '';
@@ -883,7 +936,20 @@ function editBackend(name) {
   document.getElementById('be-name').value = name;
   document.getElementById('be-name').disabled = true;
   document.getElementById('be-url').value = b.url;
-  document.getElementById('be-key').value = b.apiKey || '';
+  document.getElementById('be-key').value = '';
+  document.getElementById('be-key').disabled = false;
+  document.getElementById('be-clear-key').checked = false;
+  if (b.hasApiKey) {
+    document.getElementById('be-key').placeholder = 'Leave empty to keep existing key';
+    document.getElementById('be-key-status').textContent = 'Key is set';
+    document.getElementById('be-key-status').style.color = 'var(--accent-green)';
+    document.getElementById('be-clear-key-label').style.display = 'flex';
+  } else {
+    document.getElementById('be-key').placeholder = 'sk-...';
+    document.getElementById('be-key-status').textContent = 'No key configured';
+    document.getElementById('be-key-status').style.color = 'var(--text-muted)';
+    document.getElementById('be-clear-key-label').style.display = 'none';
+  }
   document.getElementById('be-mode').value = b.apiMode || '';
   document.getElementById('be-optimize').checked = !!b.optimize;
 
@@ -904,12 +970,21 @@ async function saveBackend(e) {
   const name = editingBackend || document.getElementById('be-name').value.trim();
   if (!name) return;
 
+  const keyValue = document.getElementById('be-key').value.trim();
+  const clearKey = document.getElementById('be-clear-key').checked;
+
   const body = {
     url: document.getElementById('be-url').value.trim(),
-    apiKey: document.getElementById('be-key').value.trim() || undefined,
     apiMode: document.getElementById('be-mode').value || undefined,
     optimize: document.getElementById('be-optimize').checked,
   };
+
+  // Key handling: new key provided → send it, clear checkbox → clearApiKey, otherwise server preserves existing
+  if (clearKey) {
+    body.clearApiKey = true;
+  } else if (keyValue) {
+    body.apiKey = keyValue;
+  }
 
   // Attach provider preferences for OpenRouter
   if (body.apiMode === 'openrouter') {
@@ -976,8 +1051,79 @@ function toast(msg, type = 'success') {
   toastTimer = setTimeout(() => { el.classList.remove('visible'); }, 2800);
 }
 
+// ── Settings ──
+
+let orgIds = [];
+
+async function loadAuth() {
+  try {
+    const res = await fetch(`${API}/auth`);
+    const data = await res.json();
+    document.getElementById('cache-ttl').value = data.cacheTtlMinutes || 60;
+    orgIds = data.allowedOrgIds || [];
+    renderOrgIds();
+  } catch { /* ignore */ }
+}
+
+function renderOrgIds() {
+  const el = document.getElementById('org-ids-list');
+  if (orgIds.length === 0) {
+    el.innerHTML = '<div class="form-hint" style="padding: 4px 0;">No org IDs configured — all organizations are allowed</div>';
+    return;
+  }
+  el.innerHTML = orgIds.map((id, i) => `
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <input class="form-input" style="flex: 1;" value="${id}" onchange="orgIds[${i}]=this.value.trim()" placeholder="org-...">
+      <button class="btn-icon danger" onclick="orgIds.splice(${i},1);renderOrgIds()" title="Remove">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function addOrgIdRow() {
+  orgIds.push('');
+  renderOrgIds();
+  // Focus the newly added input
+  const inputs = document.getElementById('org-ids-list').querySelectorAll('input');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+async function saveOrgIds() {
+  const cleaned = orgIds.filter(id => id.trim().length > 0);
+  const res = await fetch(`${API}/auth`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ allowedOrgIds: cleaned }),
+  });
+  if (res.ok) {
+    const data = await res.json();
+    orgIds = data.auth.allowedOrgIds || [];
+    renderOrgIds();
+    toast('Organization allowlist saved');
+  } else {
+    toast('Failed to save', 'error');
+  }
+}
+
+async function saveCacheTtl() {
+  const ttl = parseInt(document.getElementById('cache-ttl').value, 10);
+  if (!ttl || ttl < 1) {
+    toast('TTL must be at least 1 minute', 'error');
+    return;
+  }
+  const res = await fetch(`${API}/auth`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cacheTtlMinutes: ttl }),
+  });
+  if (res.ok) toast('Cache TTL saved');
+  else toast('Failed to save', 'error');
+}
+
 // ── Init ──
 load();
+loadAuth();
 </script>
 </body>
 </html>

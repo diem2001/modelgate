@@ -1,21 +1,23 @@
 import { Hono } from 'hono';
 import type { BackendConfig, RoutingRule } from '../config.js';
 import {
-  getConfig, updateBackend, deleteBackend, updateRouting,
+  getConfig, updateBackend, deleteBackend, updateRouting, updateAuth,
 } from '../config-store.js';
+
+function sanitizeBackend(b: BackendConfig): Record<string, unknown> {
+  const { apiKey, ...rest } = b;
+  return { ...rest, hasApiKey: !!apiKey };
+}
 
 export function createAdminApi(): Hono {
   const app = new Hono();
 
-  // ── GET /admin/api/config ── full config (sans sensitive keys displayed in full)
+  // ── GET /admin/api/config ── full config (no secret values)
   app.get('/api/config', (c) => {
     const config = getConfig();
     return c.json({
       backends: Object.fromEntries(
-        Object.entries(config.backends).map(([name, b]) => [name, {
-          ...b,
-          apiKey: b.apiKey ? maskKey(b.apiKey) : undefined,
-        }]),
+        Object.entries(config.backends).map(([name, b]) => [name, sanitizeBackend(b)]),
       ),
       routing: config.routing,
     });
@@ -25,27 +27,28 @@ export function createAdminApi(): Hono {
   app.get('/api/backends', (c) => {
     const config = getConfig();
     return c.json(Object.fromEntries(
-      Object.entries(config.backends).map(([name, b]) => [name, {
-        ...b,
-        apiKey: b.apiKey ? maskKey(b.apiKey) : undefined,
-      }]),
+      Object.entries(config.backends).map(([name, b]) => [name, sanitizeBackend(b)]),
     ));
   });
 
   // ── PUT /admin/api/backends/:name ── create or update a backend
   app.put('/api/backends/:name', async (c) => {
     const name = c.req.param('name');
-    const body = await c.req.json<Partial<BackendConfig> & { apiKey?: string }>();
+    const body = await c.req.json<Partial<BackendConfig> & { apiKey?: string; clearApiKey?: boolean }>();
 
     if (!body.url) {
       return c.json({ error: 'url is required' }, 400);
     }
 
-    // If apiKey is masked or empty, preserve existing
     const existing = getConfig().backends[name];
-    const apiKey = (!body.apiKey || body.apiKey.includes('***'))
-      ? existing?.apiKey
-      : body.apiKey;
+    let apiKey: string | undefined;
+    if (body.clearApiKey) {
+      apiKey = undefined; // explicitly remove
+    } else if (body.apiKey) {
+      apiKey = body.apiKey; // new key provided
+    } else {
+      apiKey = existing?.apiKey; // preserve existing
+    }
 
     const backend: BackendConfig = {
       url: body.url,
@@ -56,7 +59,7 @@ export function createAdminApi(): Hono {
     };
 
     updateBackend(name, backend);
-    return c.json({ ok: true, name, backend: { ...backend, apiKey: apiKey ? maskKey(apiKey) : undefined } });
+    return c.json({ ok: true, name, backend: sanitizeBackend(backend) });
   });
 
   // ── DELETE /admin/api/backends/:name ── remove a backend
@@ -89,6 +92,51 @@ export function createAdminApi(): Hono {
     return c.json({ ok: true, rules });
   });
 
+  // ── GET /admin/api/auth ── get auth settings
+  app.get('/api/auth', (c) => {
+    const config = getConfig();
+    return c.json({
+      enabled: config.auth.enabled,
+      cacheTtlMinutes: config.auth.cacheTtlMinutes,
+      allowedOrgIds: config.auth.allowedOrgIds ?? [],
+    });
+  });
+
+  // ── PUT /admin/api/auth ── update auth settings
+  app.put('/api/auth', async (c) => {
+    const body = await c.req.json<{ cacheTtlMinutes?: number; allowedOrgIds?: string[] }>();
+    const updates: Partial<{ cacheTtlMinutes: number; allowedOrgIds: string[] }> = {};
+
+    if (body.cacheTtlMinutes !== undefined) {
+      const ttl = Number(body.cacheTtlMinutes);
+      if (isNaN(ttl) || ttl < 1) {
+        return c.json({ error: 'cacheTtlMinutes must be a number >= 1' }, 400);
+      }
+      updates.cacheTtlMinutes = ttl;
+    }
+
+    if (body.allowedOrgIds !== undefined) {
+      if (!Array.isArray(body.allowedOrgIds)) {
+        return c.json({ error: 'allowedOrgIds must be an array of strings' }, 400);
+      }
+      updates.allowedOrgIds = body.allowedOrgIds.filter(id => typeof id === 'string' && id.trim().length > 0).map(id => id.trim());
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updateAuth(updates);
+    }
+
+    const config = getConfig();
+    return c.json({
+      ok: true,
+      auth: {
+        enabled: config.auth.enabled,
+        cacheTtlMinutes: config.auth.cacheTtlMinutes,
+        allowedOrgIds: config.auth.allowedOrgIds ?? [],
+      },
+    });
+  });
+
   // ── GET /admin/api/status ── health + overview
   app.get('/api/status', (c) => {
     const config = getConfig();
@@ -102,7 +150,3 @@ export function createAdminApi(): Hono {
   return app;
 }
 
-function maskKey(key: string): string {
-  if (key.length <= 8) return '***';
-  return key.slice(0, 4) + '***' + key.slice(-4);
-}
