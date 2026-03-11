@@ -44,7 +44,9 @@ export function createMessagesRoute(): Hono {
       body.model = backend.modelOverride;
     }
 
-    logRequest(body, backend.backendName);
+    const backendConfig = config.backends[backend.backendName];
+    const providerHint = backendConfig?.providerPreferences?.order?.[0];
+    logRequest(body, backend.backendName, providerHint);
 
     const startTime = Date.now();
 
@@ -62,7 +64,6 @@ export function createMessagesRoute(): Hono {
         }
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
-        const backendConfig = config.backends[backend.backendName];
         if (backendConfig?.apiMode === 'openrouter') {
           upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey, backendConfig.providerPreferences);
         } else if (backendConfig?.apiMode === 'anthropic') {

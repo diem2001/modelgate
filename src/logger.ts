@@ -102,7 +102,7 @@ function extractToolNames(content?: AnthropicContentBlock[]): string[] {
 
 // ── Public API ─────────────────────────────────────
 
-export function logRequest(req: AnthropicRequest, backendName: string) {
+export function logRequest(req: AnthropicRequest, backendName: string, providerHint?: string) {
   const turns = req.messages.filter(m => m.role === 'user').length;
   const tools = req.tools?.length ?? 0;
   const mode = req.stream ? 'stream' : 'sync';
@@ -115,8 +115,12 @@ export function logRequest(req: AnthropicRequest, backendName: string) {
     mode,
   ].filter(Boolean).join(' · ');
 
+  const target = providerHint
+    ? `${c.magenta(backendName)} ${c.dim('via')} ${c.green(providerHint)}`
+    : c.magenta(backendName);
+
   console.log('');
-  console.log(`${c.dim(timestamp())}  ${c.cyan(c.bold(req.model))} → ${c.magenta(backendName)}  ${c.dim(meta)}`);
+  console.log(`${c.dim(timestamp())}  ${c.cyan(c.bold(req.model))} → ${target}  ${c.dim(meta)}`);
   console.log(`  ${c.blue('▶')} ${input}`);
 }
 
