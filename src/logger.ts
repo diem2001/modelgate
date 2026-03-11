@@ -51,11 +51,11 @@ function formatUsage(usage?: TokenUsage): string {
 
   // Line 1: token counts
   const parts: string[] = [];
-  parts.push(`${usage.input}in`);
-  if (usage.cached) parts.push(`${c.green(String(usage.cached))}cached`);
-  if (usage.cacheWrite) parts.push(`${usage.cacheWrite}write`);
-  parts.push(`${usage.output}out`);
-  if (usage.reasoning) parts.push(`${usage.reasoning}reason`);
+  parts.push(`${usage.input} in`);
+  if (usage.cached) parts.push(`${c.green(String(usage.cached))} cached`);
+  if (usage.cacheWrite) parts.push(`${usage.cacheWrite} write`);
+  parts.push(`${usage.output} out`);
+  if (usage.reasoning) parts.push(`${usage.reasoning} reason`);
 
   let str = `  ${c.dim(parts.join(' · '))}`;
 
