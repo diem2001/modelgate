@@ -106,7 +106,7 @@ console.log(`
   Admin:    http://${config.server.host}:${config.server.port}/admin/
 
   Auth: ${config.auth.enabled ? `enabled (cache TTL: ${config.auth.cacheTtlMinutes}min)` : 'disabled'}
-  Org allowlist: ${config.auth.allowedOrgIds?.length ? config.auth.allowedOrgIds.join(', ') : 'none (all orgs allowed)'}
+  Org allowlist: ${config.auth.allowedOrgIds?.length ? config.auth.allowedOrgIds.join(', ') : 'NONE — all requests will be denied!'}
 
   Backends:`);
 

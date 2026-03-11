@@ -649,7 +649,7 @@
           <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
             <div>
               <label style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Allowed Organization IDs</label>
-              <div class="form-hint">Anthropic org IDs permitted to use this proxy. Empty = allow all orgs.</div>
+              <div class="form-hint">Anthropic org IDs permitted to use this proxy. Empty = deny all requests.</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="saveOrgIds()">Save</button>
           </div>
@@ -1068,7 +1068,7 @@ async function loadAuth() {
 function renderOrgIds() {
   const el = document.getElementById('org-ids-list');
   if (orgIds.length === 0) {
-    el.innerHTML = '<div class="form-hint" style="padding: 4px 0;">No org IDs configured — all organizations are allowed</div>';
+    el.innerHTML = '<div class="form-hint" style="padding: 4px 0; color: var(--accent-red);">No org IDs configured — all API requests will be denied</div>';
     return;
   }
   el.innerHTML = orgIds.map((id, i) => `

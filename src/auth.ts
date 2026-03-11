@@ -69,8 +69,8 @@ function cacheAndValidateOrg(token: string, res: Response, config: AuthConfig): 
 }
 
 function isOrgAllowed(orgId: string | undefined, allowedOrgIds: string[] | undefined): boolean {
-  // No allowlist configured = allow all (open mode)
-  if (!allowedOrgIds || allowedOrgIds.length === 0) return true;
+  // No allowlist configured = deny all (secure by default)
+  if (!allowedOrgIds || allowedOrgIds.length === 0) return false;
   // Allowlist configured but token has no org = deny
   if (!orgId) return false;
   return allowedOrgIds.includes(orgId);
