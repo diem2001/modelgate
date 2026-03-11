@@ -82,9 +82,9 @@ function convertSystemPrompt(system: AnthropicRequest['system']): OpenAIMessage 
     return { role: 'system', content: system };
   }
 
-  // Preserve content blocks with cache_control
+  // Preserve content blocks with cache_control, strip billing headers
   const blocks: OpenAIContentBlock[] = system
-    .filter(b => b.type === 'text')
+    .filter(b => b.type === 'text' && !(b.text ?? '').startsWith('x-anthropic-billing-header'))
     .map(b => {
       const block: OpenAIContentBlock = { type: 'text', text: b.text ?? '' };
       if (b.cache_control) block.cache_control = b.cache_control as OpenAIContentBlock['cache_control'];
