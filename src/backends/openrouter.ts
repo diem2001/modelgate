@@ -28,13 +28,6 @@ export async function forwardToOpenRouter(
 
   const body = JSON.stringify(openAIReq);
 
-  // Debug: check if cache_control is present in outgoing payload
-  const hasCacheControl = body.includes('cache_control');
-  const systemMsg = openAIReq.messages.find(m => m.role === 'system');
-  const systemIsArray = systemMsg && Array.isArray(systemMsg.content);
-  const systemPreview = systemMsg ? (typeof systemMsg.content === 'string' ? 'string(' + systemMsg.content.length + ')' : JSON.stringify(systemMsg.content).slice(0, 200)) : 'none';
-  console.log(`\x1b[2m  [openrouter] cache_control: ${hasCacheControl}, system: ${systemIsArray ? 'blocks' : 'string'}, preview: ${systemPreview}\x1b[0m`);
-
   const upstreamRes = await fetch(url, {
     method: 'POST',
     headers,
@@ -232,10 +225,6 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
 
             try {
               const chunk = JSON.parse(data) as OpenAIStreamChunk;
-              // Debug: log usage chunks
-              if ((chunk as any).usage) {
-                console.log(`\x1b[2m  [openrouter] usage chunk: ${JSON.stringify((chunk as any).usage)}\x1b[0m`);
-              }
               const events = openAIChunkToAnthropicEvents(chunk, state);
               for (const event of events) {
                 controller.enqueue(encoder.encode(event));
@@ -246,12 +235,21 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
           }
         }
 
-        // Emit final usage if available
+        // Emit final usage if available (extended fields for cost tracking)
         if (state._inputTokens || state._outputTokens) {
+          const usage: Record<string, number> = {
+            input_tokens: state._inputTokens,
+            output_tokens: state._outputTokens,
+          };
+          if (state._cachedTokens) usage.cache_read_input_tokens = state._cachedTokens;
+          if (state._cacheWriteTokens) usage.cache_creation_input_tokens = state._cacheWriteTokens;
+          if (state._reasoningTokens) usage.reasoning_tokens = state._reasoningTokens;
+          if (state._cost !== undefined) usage.cost = state._cost;
+
           const usageEvent = `event: message_delta\ndata: ${JSON.stringify({
             type: 'message_delta',
             delta: {},
-            usage: { input_tokens: state._inputTokens, output_tokens: state._outputTokens },
+            usage,
           })}\n\n`;
           controller.enqueue(encoder.encode(usageEvent));
         }

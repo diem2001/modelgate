@@ -9,6 +9,7 @@ import { forwardToOpenRouter } from '../backends/openrouter.js';
 import {
   logRequest, logResponseSync, logStreamStart, logStreamResponse,
   logResponseError, logError,
+  type TokenUsage,
 } from '../logger.js';
 
 export function createMessagesRoute(): Hono {
@@ -87,12 +88,18 @@ export function createMessagesRoute(): Hono {
       // Sync response
       const responseBody = await upstreamRes.text();
       let content: AnthropicResponse['content'] | undefined;
-      let usage: { input: number; output: number } | undefined;
+      let usage: TokenUsage | undefined;
       try {
         const parsed = JSON.parse(responseBody) as AnthropicResponse;
         content = parsed.content;
         if (parsed.usage) {
-          usage = { input: parsed.usage.input_tokens, output: parsed.usage.output_tokens };
+          const u = parsed.usage as Record<string, number>;
+          usage = {
+            input: u.input_tokens ?? 0,
+            output: u.output_tokens ?? 0,
+            cached: u.cache_read_input_tokens || undefined,
+            cacheWrite: u.cache_creation_input_tokens || undefined,
+          };
         }
       } catch { /* not JSON */ }
 
@@ -132,12 +139,23 @@ function createLoggingStream(
   const toolCalls = new Map<number, { name: string; args: string }>();
   let inputTokens = 0;
   let outputTokens = 0;
+  let cachedTokens = 0;
+  let cacheWriteTokens = 0;
+  let reasoningTokens = 0;
+  let cost: number | undefined;
 
   const stream = new ReadableStream({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
-        const usage = (inputTokens || outputTokens) ? { input: inputTokens, output: outputTokens } : undefined;
+        const usage: TokenUsage | undefined = (inputTokens || outputTokens) ? {
+          input: inputTokens,
+          output: outputTokens,
+          cached: cachedTokens || undefined,
+          cacheWrite: cacheWriteTokens || undefined,
+          reasoning: reasoningTokens || undefined,
+          cost,
+        } : undefined;
         logStreamResponse(model, backendName, Date.now() - startTime, streamedText, toolCalls, usage);
         controller.close();
         return;
@@ -173,10 +191,18 @@ function createLoggingStream(
               });
             }
           } else if (event.type === 'message_start' && event.message?.usage) {
-            inputTokens = event.message.usage.input_tokens ?? 0;
+            const u = event.message.usage;
+            inputTokens = u.input_tokens ?? 0;
+            if (u.cache_read_input_tokens) cachedTokens = u.cache_read_input_tokens;
+            if (u.cache_creation_input_tokens) cacheWriteTokens = u.cache_creation_input_tokens;
           } else if (event.type === 'message_delta' && event.usage) {
-            if (event.usage.input_tokens) inputTokens = event.usage.input_tokens;
-            if (event.usage.output_tokens) outputTokens = event.usage.output_tokens;
+            const u = event.usage;
+            if (u.input_tokens) inputTokens = u.input_tokens;
+            if (u.output_tokens) outputTokens = u.output_tokens;
+            if (u.cache_read_input_tokens) cachedTokens = u.cache_read_input_tokens;
+            if (u.cache_creation_input_tokens) cacheWriteTokens = u.cache_creation_input_tokens;
+            if (u.reasoning_tokens) reasoningTokens = u.reasoning_tokens;
+            if (u.cost !== undefined) cost = u.cost;
           }
         } catch { /* skip */ }
       }

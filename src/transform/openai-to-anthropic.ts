@@ -78,6 +78,10 @@ interface StreamState {
   currentToolCall: { index: number; id: string; name: string; arguments: string } | null;
   _inputTokens: number;
   _outputTokens: number;
+  _cachedTokens: number;
+  _cacheWriteTokens: number;
+  _reasoningTokens: number;
+  _cost: number | undefined;
 }
 
 export function createStreamState(model: string): StreamState {
@@ -89,6 +93,10 @@ export function createStreamState(model: string): StreamState {
     currentToolCall: null,
     _inputTokens: 0,
     _outputTokens: 0,
+    _cachedTokens: 0,
+    _cacheWriteTokens: 0,
+    _reasoningTokens: 0,
+    _cost: undefined,
   };
 }
 
@@ -99,6 +107,18 @@ export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: St
   if (chunk.usage) {
     state._inputTokens = chunk.usage.prompt_tokens ?? state._inputTokens;
     state._outputTokens = chunk.usage.completion_tokens ?? state._outputTokens;
+    if (chunk.usage.prompt_tokens_details?.cached_tokens) {
+      state._cachedTokens = chunk.usage.prompt_tokens_details.cached_tokens;
+    }
+    if (chunk.usage.prompt_tokens_details?.cache_write_tokens) {
+      state._cacheWriteTokens = chunk.usage.prompt_tokens_details.cache_write_tokens;
+    }
+    if (chunk.usage.completion_tokens_details?.reasoning_tokens) {
+      state._reasoningTokens = chunk.usage.completion_tokens_details.reasoning_tokens;
+    }
+    if (chunk.usage.cost !== undefined) {
+      state._cost = chunk.usage.cost;
+    }
   }
 
   const choice = chunk.choices?.[0];

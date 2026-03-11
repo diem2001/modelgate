@@ -7,6 +7,17 @@ export function initLogger(cfg: LoggingConfig) {
   config = cfg;
 }
 
+// ── Token Usage Type ──────────────────────────────
+
+export interface TokenUsage {
+  input: number;
+  output: number;
+  cached?: number;
+  cacheWrite?: number;
+  reasoning?: number;
+  cost?: number;
+}
+
 // ── Colors ─────────────────────────────────────────
 
 const c = {
@@ -33,6 +44,27 @@ function truncate(s: string, max: number): string {
   s = s.replace(/\s+/g, ' ').trim();
   if (s.length <= max) return s;
   return s.slice(0, max) + '…';
+}
+
+function formatUsage(usage?: TokenUsage): string {
+  if (!usage) return '';
+
+  // Line 1: token counts
+  const parts: string[] = [];
+  parts.push(`${usage.input}in`);
+  if (usage.cached) parts.push(`${c.green(String(usage.cached))}cached`);
+  if (usage.cacheWrite) parts.push(`${usage.cacheWrite}write`);
+  parts.push(`${usage.output}out`);
+  if (usage.reasoning) parts.push(`${usage.reasoning}reason`);
+
+  let str = `  ${c.dim(parts.join(' · '))}`;
+
+  // Cost
+  if (usage.cost !== undefined) {
+    str += `  ${c.yellow('$' + usage.cost.toFixed(4))}`;
+  }
+
+  return str;
 }
 
 // ── Content helpers ────────────────────────────────
@@ -94,7 +126,7 @@ export function logResponseSync(
   status: number,
   durationMs: number,
   content?: AnthropicContentBlock[],
-  usage?: { input: number; output: number },
+  usage?: TokenUsage,
 ) {
   const statusStr = status >= 200 && status < 300 ? c.green(`${status}`) : c.red(`${status}`);
   const text = truncate(extractResponseText(content), 120);
@@ -102,8 +134,7 @@ export function logResponseSync(
 
   if (text) console.log(`  ${c.green('◀')} ${text}`);
   if (tools.length) console.log(`  ${c.yellow('⚡')} ${tools.join(', ')}`);
-  const usageStr = usage ? `  ${c.dim(`${usage.input}→${usage.output} tok (${usage.input + usage.output})`)}` : '';
-  console.log(`  ${statusStr} ${c.dim(formatDuration(durationMs))}${usageStr}`);
+  console.log(`  ${statusStr} ${c.dim(formatDuration(durationMs))}${formatUsage(usage)}`);
 }
 
 export function logStreamStart(_model: string, _backendName: string) {
@@ -116,15 +147,14 @@ export function logStreamResponse(
   durationMs: number,
   text: string,
   toolCalls: Map<number, { name: string; args: string }>,
-  usage?: { input: number; output: number },
+  usage?: TokenUsage,
 ) {
   if (text) console.log(`  ${c.green('◀')} ${truncate(text, 120)}`);
   if (toolCalls.size > 0) {
     const names = [...toolCalls.values()].map(t => t.name).join(', ');
     console.log(`  ${c.yellow('⚡')} ${names}`);
   }
-  const usageStr = usage ? `  ${c.dim(`${usage.input}→${usage.output} tok (${usage.input + usage.output})`)}` : '';
-  console.log(`  ${c.green('200')} ${c.dim(formatDuration(durationMs))}${usageStr}`);
+  console.log(`  ${c.green('200')} ${c.dim(formatDuration(durationMs))}${formatUsage(usage)}`);
 }
 
 export function logResponseError(
