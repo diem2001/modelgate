@@ -76,6 +76,8 @@ interface StreamState {
   contentIndex: number;
   textBlockStarted: boolean;
   currentToolCall: { index: number; id: string; name: string; arguments: string } | null;
+  _inputTokens: number;
+  _outputTokens: number;
 }
 
 export function createStreamState(model: string): StreamState {
@@ -85,6 +87,8 @@ export function createStreamState(model: string): StreamState {
     contentIndex: 0,
     textBlockStarted: false,
     currentToolCall: null,
+    _inputTokens: 0,
+    _outputTokens: 0,
   };
 }
 
@@ -168,6 +172,12 @@ export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: St
     }
   }
 
+  // Track usage from any chunk that provides it
+  if (chunk.usage) {
+    state._inputTokens = chunk.usage.prompt_tokens ?? state._inputTokens;
+    state._outputTokens = chunk.usage.completion_tokens ?? state._outputTokens;
+  }
+
   // Finish
   if (choice.finish_reason) {
     events.push(sseEvent('content_block_stop', {
@@ -180,7 +190,7 @@ export function openAIChunkToAnthropicEvents(chunk: OpenAIStreamChunk, state: St
         stop_reason: mapFinishReason(choice.finish_reason),
         stop_sequence: null,
       },
-      usage: { output_tokens: 0 },
+      usage: { output_tokens: state._outputTokens },
     }));
   }
 
@@ -198,7 +208,7 @@ export function createMessageStartEvent(state: StreamState): string {
       model: state.model,
       stop_reason: null,
       stop_sequence: null,
-      usage: { input_tokens: 0, output_tokens: 0 },
+      usage: { input_tokens: state._inputTokens, output_tokens: 0 },
     },
   });
 }
