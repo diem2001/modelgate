@@ -28,6 +28,12 @@ export async function forwardToOpenRouter(
 
   const body = JSON.stringify(openAIReq);
 
+  // Debug: check if cache_control is present in outgoing payload
+  const hasCacheControl = body.includes('cache_control');
+  const systemMsg = openAIReq.messages.find(m => m.role === 'system');
+  const systemIsArray = systemMsg && Array.isArray(systemMsg.content);
+  console.log(`\x1b[2m  [openrouter] cache_control in payload: ${hasCacheControl}, system content type: ${systemIsArray ? 'blocks' : 'string'}\x1b[0m`);
+
   const upstreamRes = await fetch(url, {
     method: 'POST',
     headers,
