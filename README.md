@@ -78,7 +78,7 @@ backends:
     url: https://api.anthropic.com
 
   lmstudio:
-    url: http://localhost:1234
+    url: http://host.docker.internal:11234   # LM Studio via SSH tunnel
     apiMode: anthropic    # openai (default) or anthropic (/v1/messages)
     optimize: true        # strip tools, trim context, cap max_tokens
 
@@ -87,16 +87,19 @@ backends:
     apiMode: openrouter   # preserves cache_control for prompt caching
     optimize: false       # send full payload (cloud model)
     providerPreferences:  # OpenRouter-specific provider routing
-      order: ["Inceptron/fp8"]
-      allow_fallbacks: false
+      order: ["inceptron/fp8"]
 
 routing:
   rules:
     - match: "claude-haiku-*"
-      backend: lmstudio
-      model: qwen2.5-coder-32b    # model override
+      backend: openrouter
+      model: minimax/minimax-m2.5   # route haiku to MiniMax M2.5 via OpenRouter
     - match: "claude-*"
       backend: anthropic
+    - match: "qwen*"
+      backend: lmstudio
+    - match: "llama*"
+      backend: lmstudio
     - match: "openrouter/*"
       backend: openrouter
     - match: "*"
