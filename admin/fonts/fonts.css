@@ -4,7 +4,7 @@
   font-style: normal;
   font-weight: 300 600;
   font-display: swap;
-  src: url(./jetbrains-mono.woff2) format('woff2');
+  src: url(./jetbrainsmono.woff2) format('woff2');
 }
 
 /* Plus Jakarta Sans — Variable font, weights 300-700 */
@@ -13,5 +13,5 @@
   font-style: normal;
   font-weight: 300 700;
   font-display: swap;
-  src: url(./plus-jakarta-sans.woff2) format('woff2');
+  src: url(./plusjakartasans.woff2) format('woff2');
 }
