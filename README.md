@@ -160,7 +160,7 @@ export ANTHROPIC_BASE_URL=https://modelgate.skyvu.de  # or http://localhost:4000
 Compact one-line format with full cost breakdown:
 
 ```
-13:45:48  minimax/minimax-m2.5 → openrouter via Minimax  t2 · 32000tok · 60tools · stream
+13:45:48  minimax/minimax-m2.5 → openrouter via inceptron/fp8  t2 · 32000tok · 60tools · stream
   ▶ What is the capital of France?
   ◀ The capital of France is Paris.
   200 1.2s  30154 in · 25933 cached · 24 out · 19 reason  $0.0020
