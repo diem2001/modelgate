@@ -69,6 +69,17 @@ function prepareForLocalModel(req: AnthropicRequest): AnthropicRequest {
     ? messages.slice(1)
     : messages;
 
+  // Collect IDs of allowed tool_use blocks so we can match tool_results
+  const allowedToolUseIds = new Set<string>();
+  for (const msg of trimmed) {
+    if (typeof msg.content === 'string' || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (block.type === 'tool_use' && block.name && ALLOWED_TOOLS.has(block.name) && block.id) {
+        allowedToolUseIds.add(block.id);
+      }
+    }
+  }
+
   // Clean messages: strip noise but preserve tool_use/tool_result blocks for allowed tools
   const cleaned = trimmed.map(msg => {
     if (typeof msg.content === 'string') {
@@ -84,9 +95,12 @@ function prepareForLocalModel(req: AnthropicRequest): AnthropicRequest {
           if (text) newBlocks.push({ ...block, text });
         } else if (block.type === 'tool_use' && block.name && ALLOWED_TOOLS.has(block.name)) {
           newBlocks.push(block);
-        } else if (block.type === 'tool_result') {
-          // Keep tool results for allowed tools, convert others to text
+        } else if (block.type === 'tool_result' && block.tool_use_id && allowedToolUseIds.has(block.tool_use_id)) {
           newBlocks.push(block);
+        } else if (block.type === 'tool_result') {
+          // Convert tool_result for disallowed/removed tools to text
+          const resultText = typeof block.content === 'string' ? block.content : '(result)';
+          newBlocks.push({ type: 'text', text: `[Tool result: ${cleanText(resultText).slice(0, 200)}]` });
         } else if (block.type === 'tool_use') {
           // Convert disallowed tool_use to text summary
           newBlocks.push({ type: 'text', text: `[Tool call: ${block.name}]` });
