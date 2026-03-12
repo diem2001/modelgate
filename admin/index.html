@@ -1724,7 +1724,7 @@ function renderLogs(append) {
 
     return `<div class="log-row${errorClass}" onclick="showLogDetail(${log.id})">
       <div class="log-time">${date}<br>${time}</div>
-      <div class="log-model">${log.model}${streamTag}</div>
+      <div class="log-model">${log.model}${log.requested_model ? `<br><span style="font-size:calc(9px * var(--scale));color:var(--text-muted)">← ${log.requested_model}</span>` : ''}${streamTag}</div>
       <div class="log-meta">
         <div class="log-input-preview">${escHtml(preview)}</div>
         <div class="log-tokens">${tokens}</div>
@@ -1761,7 +1761,9 @@ async function showLogDetail(id) {
   const statusClass = log.status < 300 ? 's2xx' : log.status < 500 ? 's4xx' : 's5xx';
   const streamLabel = log.stream ? 'stream' : 'sync';
 
-  document.getElementById('log-modal-title').textContent = `${log.model} → ${log.backend}`;
+  document.getElementById('log-modal-title').textContent = log.requested_model
+    ? `${log.requested_model} → ${log.model} → ${log.backend}`
+    : `${log.model} → ${log.backend}`;
 
   // Token bars
   const maxToken = Math.max(log.input_tokens, log.output_tokens, log.cached_tokens, log.cache_write_tokens, log.reasoning_tokens, 1);
@@ -1791,6 +1793,7 @@ async function showLogDetail(id) {
   document.getElementById('log-modal-body').innerHTML = `
     <div class="log-detail-header">
       ${timeStr} · <span class="log-status ${statusClass}">${log.status}</span> · ${dur} · ${streamLabel} · t${log.turns} · ${log.num_tools} tools
+      ${log.requested_model ? `<br><span style="color:var(--amber);font-size:calc(11px * var(--scale))">⚡ Model override: ${escHtml(log.requested_model)} → ${escHtml(log.model)}</span>` : ''}
     </div>
 
     <div class="log-detail-section">

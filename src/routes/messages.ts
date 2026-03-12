@@ -68,10 +68,16 @@ export function createMessagesRoute(): Hono {
       return c.json({ type: 'error', error: { type: 'invalid_request_error', message: (err as Error).message } }, 400);
     }
 
+    // Capture original model before any override
+    const requestedModel = body.model;
+
     // Apply model override from routing rule (e.g. haiku → qwen2.5-coder-32b)
     if (backend.modelOverride) {
       body.model = backend.modelOverride;
     }
+
+    // Only store requested_model when it differs from the final model
+    const requestedModelLog = requestedModel !== body.model ? requestedModel : null;
 
     const backendConfig = config.backends[backend.backendName];
     const providerHint = backendConfig?.providerPreferences?.order?.[0];
@@ -125,6 +131,7 @@ export function createMessagesRoute(): Hono {
           insertLog({
             timestamp: new Date().toISOString(),
             model: body.model,
+            requested_model: requestedModelLog,
             backend: backend.backendName,
             provider_hint: providerHint ?? null,
             status: upstreamRes.status,
@@ -156,7 +163,7 @@ export function createMessagesRoute(): Hono {
         logStreamStart(body.model, backend.backendName);
         return createLoggingStream(
           upstreamRes, responseHeaders, body.model, backend.backendName, startTime,
-          providerHint ?? null, turns, numTools, inputText, requestBody,
+          providerHint ?? null, turns, numTools, inputText, requestBody, requestedModelLog,
         );
       }
 
@@ -189,6 +196,7 @@ export function createMessagesRoute(): Hono {
         insertLog({
           timestamp: new Date().toISOString(),
           model: body.model,
+          requested_model: requestedModelLog,
           backend: backend.backendName,
           provider_hint: providerHint ?? null,
           status: upstreamRes.status,
@@ -222,6 +230,7 @@ export function createMessagesRoute(): Hono {
         insertLog({
           timestamp: new Date().toISOString(),
           model: body.model,
+          requested_model: requestedModelLog,
           backend: backend.backendName,
           provider_hint: providerHint ?? null,
           status: 502,
@@ -260,6 +269,7 @@ function createLoggingStream(
   numTools: number,
   inputText: string,
   requestBody: string,
+  requestedModel: string | null,
 ): Response {
   const reader = upstreamRes.body!.getReader();
   const decoder = new TextDecoder();
@@ -295,6 +305,7 @@ function createLoggingStream(
           insertLog({
             timestamp: new Date().toISOString(),
             model,
+            requested_model: requestedModel,
             backend: backendName,
             provider_hint: providerHint,
             status: 200,

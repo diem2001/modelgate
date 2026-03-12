@@ -13,6 +13,7 @@ export interface LogRecord {
   id?: number;
   timestamp: string;
   model: string;
+  requested_model: string | null;
   backend: string;
   provider_hint: string | null;
   status: number;
@@ -44,6 +45,7 @@ export function initDb(retention?: number): void {
       id                 INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp          TEXT NOT NULL,
       model              TEXT NOT NULL,
+      requested_model    TEXT,
       backend            TEXT NOT NULL,
       provider_hint      TEXT,
       status             INTEGER NOT NULL DEFAULT 0,
@@ -69,6 +71,12 @@ export function initDb(retention?: number): void {
     CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
   `);
 
+  // Migrate: add requested_model column if missing
+  const cols = db.prepare("PRAGMA table_info(requests)").all() as { name: string }[];
+  if (!cols.some(c => c.name === 'requested_model')) {
+    db.exec('ALTER TABLE requests ADD COLUMN requested_model TEXT');
+  }
+
   if (retention !== undefined) retentionDays = retention;
   runCleanup();
   // Run cleanup every hour
@@ -79,12 +87,12 @@ export function initDb(retention?: number): void {
 
 const INSERT_SQL = `
   INSERT INTO requests (
-    timestamp, model, backend, provider_hint, status, duration_ms, stream,
+    timestamp, model, requested_model, backend, provider_hint, status, duration_ms, stream,
     turns, num_tools, input_tokens, output_tokens, cached_tokens,
     cache_write_tokens, reasoning_tokens, cost,
     input_text, output_text, tool_calls, request_body, response_body
   ) VALUES (
-    @timestamp, @model, @backend, @provider_hint, @status, @duration_ms, @stream,
+    @timestamp, @model, @requested_model, @backend, @provider_hint, @status, @duration_ms, @stream,
     @turns, @num_tools, @input_tokens, @output_tokens, @cached_tokens,
     @cache_write_tokens, @reasoning_tokens, @cost,
     @input_text, @output_text, @tool_calls, @request_body, @response_body
@@ -156,7 +164,7 @@ export function queryLogs(q: LogQuery): { logs: Omit<LogRecord, 'request_body' |
   const total = (countStmt.get(params) as { cnt: number }).cnt;
 
   const dataStmt = db.prepare(`
-    SELECT id, timestamp, model, backend, provider_hint, status, duration_ms, stream,
+    SELECT id, timestamp, model, requested_model, backend, provider_hint, status, duration_ms, stream,
            turns, num_tools, input_tokens, output_tokens, cached_tokens,
            cache_write_tokens, reasoning_tokens, cost,
            input_text, output_text, tool_calls
