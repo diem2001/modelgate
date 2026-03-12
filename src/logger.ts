@@ -1,5 +1,5 @@
 import type { LoggingConfig } from './config.js';
-import type { AnthropicRequest, AnthropicContentBlock } from './types.js';
+import type { AnthropicRequest, AnthropicContentBlock, AnthropicMessage } from './types.js';
 
 let config: LoggingConfig = { level: 'standard' };
 
@@ -91,10 +91,97 @@ function lastUserMessage(req: AnthropicRequest): string {
       .map(b => b.text ?? '')
       .join(' ');
     if (text) return text;
-    const toolResults = msg.content.filter(b => b.type === 'tool_result').length;
-    if (toolResults) return `[${toolResults} tool result(s)]`;
+    const toolResults = msg.content.filter(b => b.type === 'tool_result');
+    if (toolResults.length) return formatToolResults(toolResults, req.messages, i);
   }
   return '(empty)';
+}
+
+function formatToolResults(
+  results: AnthropicContentBlock[],
+  messages: AnthropicMessage[],
+  userMsgIndex: number,
+): string {
+  // Build map from tool_use_id → {name, input} from previous assistant message
+  const toolUseMap = new Map<string, { name: string; input: Record<string, unknown> }>();
+  for (let j = userMsgIndex - 1; j >= 0; j--) {
+    const prev = messages[j];
+    if (prev.role !== 'assistant' || typeof prev.content === 'string') continue;
+    for (const block of prev.content) {
+      if (block.type === 'tool_use' && block.id && block.name) {
+        toolUseMap.set(block.id, { name: block.name, input: (block.input as Record<string, unknown>) ?? {} });
+      }
+    }
+    break; // only check the immediately preceding assistant message
+  }
+
+  const parts = results.map(r => {
+    const toolUse = r.tool_use_id ? toolUseMap.get(r.tool_use_id) : undefined;
+    const name = toolUse?.name ?? '?';
+    const detail = toolInputSummary(name, toolUse?.input);
+    const preview = toolResultPreview(r);
+    return detail
+      ? `${name}(${detail})${preview ? ' → ' + preview : ''}`
+      : `${name}${preview ? ' → ' + preview : ''}`;
+  });
+
+  return parts.join(' · ');
+}
+
+function toolInputSummary(name: string, input?: Record<string, unknown>): string {
+  if (!input) return '';
+  switch (name) {
+    case 'Read': {
+      const fp = input.file_path as string | undefined;
+      return fp ? basename(fp) : '';
+    }
+    case 'Edit':
+    case 'Write': {
+      const fp = input.file_path as string | undefined;
+      return fp ? basename(fp) : '';
+    }
+    case 'Bash': {
+      const cmd = input.command as string | undefined;
+      return cmd ? truncate(cmd, 40) : '';
+    }
+    case 'Grep': {
+      const pat = input.pattern as string | undefined;
+      return pat ? truncate(pat, 30) : '';
+    }
+    case 'Glob': {
+      const pat = input.pattern as string | undefined;
+      return pat ? truncate(pat, 30) : '';
+    }
+    case 'Agent': {
+      const desc = input.description as string | undefined;
+      return desc ? truncate(desc, 30) : '';
+    }
+    default:
+      return '';
+  }
+}
+
+function toolResultPreview(block: AnthropicContentBlock): string {
+  if (typeof block.content === 'string') {
+    const lines = block.content.split('\n').filter(l => l.trim()).length;
+    if (lines > 3) return `${lines} lines`;
+    return truncate(block.content.replace(/\s+/g, ' ').trim(), 50);
+  }
+  if (Array.isArray(block.content)) {
+    const text = block.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text ?? '')
+      .join(' ');
+    if (!text) return '';
+    const lines = text.split('\n').filter(l => l.trim()).length;
+    if (lines > 3) return `${lines} lines`;
+    return truncate(text.replace(/\s+/g, ' ').trim(), 50);
+  }
+  return '';
+}
+
+function basename(path: string): string {
+  return path.split('/').pop() ?? path;
 }
 
 function extractResponseText(content?: AnthropicContentBlock[]): string {
