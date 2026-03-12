@@ -80,6 +80,19 @@ export function createMessagesRoute(): Hono {
       const contentType = upstreamRes.headers.get('content-type');
       if (contentType) responseHeaders.set('content-type', contentType);
 
+      // Non-2xx responses — always log as error, even if streaming was requested
+      if (upstreamRes.status < 200 || upstreamRes.status >= 300) {
+        const errorBody = await upstreamRes.text();
+        logResponseError(body.model, backend.backendName, upstreamRes.status, errorBody);
+        return new Response(JSON.stringify({
+          type: 'error',
+          error: { type: 'api_error', message: `Backend error (${upstreamRes.status}): ${errorBody}` },
+        }), {
+          status: upstreamRes.status,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       // Streaming response
       if (body.stream && upstreamRes.body) {
         logStreamStart(body.model, backend.backendName);
