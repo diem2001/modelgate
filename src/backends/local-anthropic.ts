@@ -7,8 +7,9 @@ export async function forwardToLocalAnthropic(
   req: AnthropicRequest,
   baseUrl: string,
   apiKey?: string,
+  optimize = true,
 ): Promise<Response> {
-  const optimized = prepareForLocalModel(req);
+  const optimized = optimize ? prepareForLocalModel(req) : req;
   const url = `${baseUrl}/v1/messages`;
 
   const headers: Record<string, string> = {

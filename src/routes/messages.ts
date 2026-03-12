@@ -67,7 +67,8 @@ export function createMessagesRoute(): Hono {
         if (backendConfig?.apiMode === 'openrouter') {
           upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey, backendConfig.providerPreferences);
         } else if (backendConfig?.apiMode === 'anthropic') {
-          upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey);
+          const optimize = backendConfig?.optimize !== false;
+          upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey, optimize);
         } else {
           const optimize = backendConfig?.optimize !== false; // default true
           upstreamRes = await forwardToOpenAICompat(
