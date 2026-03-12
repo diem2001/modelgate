@@ -42,8 +42,20 @@ function formatDuration(ms: number): string {
 
 function truncate(s: string, max: number): string {
   s = s.replace(/\s+/g, ' ').trim();
-  if (s.length <= max) return s;
+  if (max === 0 || s.length <= max) return s;
   return s.slice(0, max) + '…';
+}
+
+function inputLimit(): number {
+  if (config.level === 'verbose') return 0;
+  if (config.level === 'minimal') return 0;
+  return 80; // standard
+}
+
+function outputLimit(): number {
+  if (config.level === 'verbose') return 0;
+  if (config.level === 'minimal') return 0;
+  return 120; // standard
 }
 
 function formatUsage(usage?: TokenUsage): string {
@@ -106,7 +118,7 @@ export function logRequest(req: AnthropicRequest, backendName: string, providerH
   const turns = req.messages.filter(m => m.role === 'user').length;
   const tools = req.tools?.length ?? 0;
   const mode = req.stream ? 'stream' : 'sync';
-  const input = truncate(lastUserMessage(req), 80);
+  const input = truncate(lastUserMessage(req), inputLimit());
 
   const meta = [
     `t${turns}`,
@@ -121,7 +133,7 @@ export function logRequest(req: AnthropicRequest, backendName: string, providerH
 
   console.log('');
   console.log(`${c.dim(timestamp())}  ${c.cyan(c.bold(req.model))} → ${target}  ${c.dim(meta)}`);
-  console.log(`  ${c.blue('▶')} ${input}`);
+  if (config.level !== 'minimal') console.log(`  ${c.blue('▶')} ${input}`);
 }
 
 export function logResponseSync(
@@ -133,7 +145,7 @@ export function logResponseSync(
   usage?: TokenUsage,
 ) {
   const statusStr = status >= 200 && status < 300 ? c.green(`${status}`) : c.red(`${status}`);
-  const text = truncate(extractResponseText(content), 120);
+  const text = truncate(extractResponseText(content), outputLimit());
   const tools = extractToolNames(content);
 
   if (text) console.log(`  ${c.green('◀')} ${text}`);
@@ -153,7 +165,7 @@ export function logStreamResponse(
   toolCalls: Map<number, { name: string; args: string }>,
   usage?: TokenUsage,
 ) {
-  if (text) console.log(`  ${c.green('◀')} ${truncate(text, 120)}`);
+  if (text) console.log(`  ${c.green('◀')} ${truncate(text, outputLimit())}`);
   if (toolCalls.size > 0) {
     const names = [...toolCalls.values()].map(t => t.name).join(', ');
     console.log(`  ${c.yellow('⚡')} ${names}`);
@@ -167,7 +179,7 @@ export function logResponseError(
   status: number,
   message: string,
 ) {
-  console.log(`  ${c.red(`${status}`)} ${truncate(message, 120)}`);
+  console.log(`  ${c.red(`${status}`)} ${truncate(message, outputLimit())}`);
 }
 
 export function logError(_model: string, _backendName: string, err: Error) {
