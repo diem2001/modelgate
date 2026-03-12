@@ -108,6 +108,12 @@ function prepareForLocalModel(req: AnthropicRequest): AnthropicRequest {
         }
       }
       if (newBlocks.length === 0) return null;
+      // tool_result blocks must come before text blocks in user messages
+      if (msg.role === 'user') {
+        const toolResults = newBlocks.filter(b => b.type === 'tool_result');
+        const rest = newBlocks.filter(b => b.type !== 'tool_result');
+        return { ...msg, content: [...toolResults, ...rest] };
+      }
       return { ...msg, content: newBlocks };
     }
     return msg;
