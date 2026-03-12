@@ -26,6 +26,8 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
   }
 
   try {
+    const tokenHint = token.slice(0, 8) + '…';
+
     // Try as x-api-key first
     const res = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
@@ -36,6 +38,8 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
     });
 
     if (res.ok) {
+      const orgId = res.headers.get('anthropic-organization-id') ?? undefined;
+      console.log(`  [auth] x-api-key OK (${tokenHint}) org=${orgId ?? 'none'}`);
       return cacheAndValidateOrg(token, res, config);
     }
 
@@ -49,9 +53,12 @@ export async function validateToken(token: string, config: AuthConfig): Promise<
     });
 
     if (res2.ok) {
+      const orgId = res2.headers.get('anthropic-organization-id') ?? undefined;
+      console.log(`  [auth] Bearer OK (${tokenHint}) org=${orgId ?? 'none'}`);
       return cacheAndValidateOrg(token, res2, config);
     }
 
+    console.log(`  [auth] REJECTED (${tokenHint}) x-api-key=${res.status} bearer=${res2.status}`);
     tokenCache.delete(token);
     return false;
   } catch {
