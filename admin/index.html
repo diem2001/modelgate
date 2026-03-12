@@ -9,7 +9,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --scale: 1;
+      --scale: 1.5;
       --bg-void: #06060a;
       --bg-deep: #0a0a10;
       --bg-surface: #0f0f18;
@@ -114,13 +114,13 @@
       margin: 0 auto;
       display: flex;
       align-items: center;
-      height: 56px;
-      gap: 14px;
+      height: calc(56px * var(--scale));
+      gap: calc(14px * var(--scale));
     }
 
     .topbar-logo {
-      width: 32px;
-      height: 32px;
+      width: calc(32px * var(--scale));
+      height: calc(32px * var(--scale));
       border-radius: 7px;
       background: var(--accent);
       display: flex;
@@ -222,7 +222,7 @@
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--text-muted);
-      padding: 10px 18px;
+      padding: calc(10px * var(--scale)) calc(18px * var(--scale));
       border-radius: var(--radius) var(--radius) 0 0;
       cursor: pointer;
       transition: all var(--transition);
@@ -293,7 +293,7 @@
       font-family: var(--mono);
       font-size: calc(11px * var(--scale));
       font-weight: 500;
-      padding: 7px 14px;
+      padding: calc(7px * var(--scale)) calc(14px * var(--scale));
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-elevated);
@@ -302,7 +302,7 @@
       transition: all var(--transition);
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: calc(6px * var(--scale));
       letter-spacing: 0.2px;
     }
     .btn:hover {
@@ -324,13 +324,13 @@
     }
 
     .btn-sm {
-      padding: 4px 10px;
+      padding: calc(4px * var(--scale)) calc(10px * var(--scale));
       font-size: calc(10px * var(--scale));
     }
 
     .btn-icon {
-      width: 28px;
-      height: 28px;
+      width: calc(28px * var(--scale));
+      height: calc(28px * var(--scale));
       padding: 0;
       display: flex;
       align-items: center;
@@ -355,29 +355,28 @@
 
     /* ── Backend Cards ── */
     .backends-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
 
     .backend-card {
-      padding: 16px 20px;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       gap: 14px;
       transition: all var(--transition);
       cursor: default;
-      border-radius: var(--radius);
-      border: 1px solid transparent;
+      border-bottom: 1px solid var(--border-subtle);
     }
+    .backend-card:last-child { border-bottom: none; }
     .backend-card:hover {
       background: var(--bg-card-hover);
-      border-color: var(--border-subtle);
     }
 
     .backend-icon {
-      width: 36px;
-      height: 36px;
+      width: calc(36px * var(--scale));
+      height: calc(36px * var(--scale));
       border-radius: var(--radius);
       display: flex;
       align-items: center;
@@ -541,7 +540,7 @@
 
     /* ── Settings Panel ── */
     .settings-group {
-      padding: 20px;
+      padding: calc(20px * var(--scale));
       border-bottom: 1px solid var(--border-subtle);
     }
     .settings-group:last-child { border-bottom: none; }
@@ -549,7 +548,7 @@
     .settings-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: calc(16px * var(--scale));
     }
 
     .settings-label {
@@ -622,14 +621,14 @@
     .log-date-btn.active { background: var(--accent-dim); color: var(--accent-bright); border-color: var(--accent); }
     .logs-list { min-height: 100px; }
     .log-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px; border-bottom: 1px solid var(--border-subtle);
+      display: flex; align-items: center; gap: calc(10px * var(--scale));
+      padding: calc(10px * var(--scale)) calc(16px * var(--scale)); border-bottom: 1px solid var(--border-subtle);
       cursor: pointer; transition: background var(--transition);
     }
     .log-row:hover { background: var(--bg-card-hover); }
     .log-row.error { border-left: 3px solid var(--red); }
-    .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; width: 58px; flex-shrink: 0; }
-    .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; min-width: 120px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; width: calc(58px * var(--scale)); flex-shrink: 0; }
+    .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; min-width: calc(120px * var(--scale)); max-width: calc(220px * var(--scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .log-meta { flex: 1; min-width: 0; }
     .log-input-preview { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .log-tokens { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost); margin-top: 2px; }
@@ -646,10 +645,10 @@
     .log-detail-label { font-family: var(--mono); font-size: calc(9px * var(--scale)); text-transform: uppercase; letter-spacing: 1px; color: var(--text-ghost); margin-bottom: 8px; }
     .log-detail-header { font-family: var(--mono); font-size: calc(12px * var(--scale)); color: var(--text-secondary); margin-bottom: 16px; }
     .log-token-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .log-token-label { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); width: 70px; flex-shrink: 0; }
+    .log-token-label { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); width: calc(70px * var(--scale)); flex-shrink: 0; }
     .log-token-bar-bg { flex: 1; height: 14px; background: var(--bg-inset); border-radius: 3px; overflow: hidden; }
     .log-token-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
-    .log-token-value { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
+    .log-token-value { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-secondary); width: calc(80px * var(--scale)); text-align: right; flex-shrink: 0; }
     .log-text-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
     .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(10px * var(--scale)); white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
     .log-json-box .jk { color: var(--cyan); }
@@ -662,6 +661,18 @@
     details.log-raw { margin-top: 8px; }
     details.log-raw summary { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); cursor: pointer; padding: 6px 0; user-select: none; }
     details.log-raw summary:hover { color: var(--text-secondary); }
+
+    /* ── Modal fullscreen ── */
+    .modal.fullscreen {
+      max-width: 100vw !important;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      margin: 0;
+    }
+    .modal.fullscreen .modal-body {
+      max-height: calc(100vh - 60px) !important;
+    }
 
     /* ── Modal ── */
     .modal-overlay {
@@ -730,7 +741,7 @@
       background: var(--bg-inset);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 10px 12px;
+      padding: calc(10px * var(--scale)) calc(12px * var(--scale));
       outline: none;
       transition: all var(--transition);
     }
@@ -866,7 +877,7 @@
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     /* ── SVG Icons ── */
-    .icon { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .icon { width: calc(13px * var(--scale)); height: calc(13px * var(--scale)); stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
     /* ── Provider prefs nested panel ── */
     .provider-prefs {
@@ -1002,8 +1013,8 @@
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
               <span id="scale-label" style="font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--text-secondary); min-width: 40px; text-align: right;">100%</span>
-              <input id="ui-scale" type="range" min="80" max="200" step="10" value="100" oninput="setScale(this.value)"
-                style="width: 160px; accent-color: var(--accent);">
+              <input id="ui-scale" type="range" min="70" max="150" step="5" value="100" oninput="setScale(this.value)"
+                style="width: 180px; accent-color: var(--accent);">
               <button class="btn btn-sm" onclick="setScale(100); document.getElementById('ui-scale').value=100;">Reset</button>
             </div>
           </div>
@@ -1131,11 +1142,14 @@
 
   <!-- Log Detail Modal -->
   <div id="log-modal" class="modal-overlay" onclick="if(event.target===this)closeLogModal()">
-    <div class="modal" style="max-width: min(90vw, 900px);">
-      <div class="modal-header">
+    <div id="log-modal-dialog" class="modal" style="max-width: min(90vw, 900px);">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
         <h3 id="log-modal-title">Request Detail</h3>
+        <button class="btn-icon" onclick="toggleLogFullscreen()" title="Toggle fullscreen" style="color: var(--text-muted);">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
       </div>
-      <div class="modal-body" id="log-modal-body" style="max-height: 70vh; overflow-y: auto;"></div>
+      <div class="modal-body" id="log-modal-body" style="max-height: 80vh; overflow-y: auto;"></div>
     </div>
   </div>
 
@@ -1146,9 +1160,12 @@ let rules = [];
 let backendNames = [];
 
 // ── UI Scale ──
+// Slider 100% = CSS --scale 1.5 (the designed default for 4K)
+// Slider maps linearly: 70% → 1.05, 100% → 1.5, 150% → 2.25
+function scaleToCSS(pct) { return (pct / 100) * 1.5; }
 function setScale(pct) {
-  const v = Math.max(80, Math.min(200, Number(pct)));
-  document.documentElement.style.setProperty('--scale', v / 100);
+  const v = Math.max(70, Math.min(150, Number(pct)));
+  document.documentElement.style.setProperty('--scale', scaleToCSS(v));
   document.getElementById('scale-label').textContent = v + '%';
   localStorage.setItem('mg-ui-scale', v);
 }
@@ -1156,7 +1173,7 @@ function setScale(pct) {
   const saved = localStorage.getItem('mg-ui-scale');
   if (saved) {
     const v = Number(saved);
-    document.documentElement.style.setProperty('--scale', v / 100);
+    document.documentElement.style.setProperty('--scale', scaleToCSS(v));
     setTimeout(() => {
       const slider = document.getElementById('ui-scale');
       const label = document.getElementById('scale-label');
@@ -1813,6 +1830,11 @@ async function showLogDetail(id) {
 
 function closeLogModal() {
   document.getElementById('log-modal').classList.remove('open');
+  document.getElementById('log-modal-dialog').classList.remove('fullscreen');
+}
+
+function toggleLogFullscreen() {
+  document.getElementById('log-modal-dialog').classList.toggle('fullscreen');
 }
 
 function highlightJson(str) {
