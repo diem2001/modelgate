@@ -1266,7 +1266,7 @@ async function saveBackend(e) {
 
   const body = {
     url: document.getElementById('be-url').value.trim(),
-    apiMode: name === 'anthropic' ? undefined : (document.getElementById('be-mode').value || undefined),
+    apiMode: name === 'anthropic' ? 'anthropic' : (document.getElementById('be-mode').value || 'openai'),
     optimize: document.getElementById('be-optimize').checked,
   };
 

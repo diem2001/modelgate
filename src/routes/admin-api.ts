@@ -53,7 +53,7 @@ export function createAdminApi(): Hono {
     const backend: BackendConfig = {
       url: body.url,
       apiKey,
-      apiMode: body.apiMode,
+      apiMode: body.apiMode || existing?.apiMode || 'openai',
       optimize: body.optimize,
       providerPreferences: body.providerPreferences,
     };
