@@ -650,7 +650,12 @@
     .log-token-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
     .log-token-value { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-secondary); width: calc(80px * var(--scale)); text-align: right; flex-shrink: 0; }
     .log-text-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
-    .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(10px * var(--scale)); white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
+    .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(10px * var(--scale)); white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; position: relative; }
+    .log-json-box.fullpage { position: fixed; inset: 0; max-height: none; z-index: 10000; border-radius: 0; border: none; padding: 16px 20px; overflow-y: auto; }
+    .log-json-fullpage-bar { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 8px 0 12px; background: var(--bg-inset); border-bottom: 1px solid var(--border-subtle); margin: -16px -20px 12px; padding: 12px 20px; z-index: 1; }
+    .log-json-fullpage-bar span { font-family: var(--sans); font-size: calc(12px * var(--scale)); color: var(--text-muted); font-weight: 600; }
+    .btn-expand-json { background: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; padding: 3px 8px; font-size: calc(10px * var(--scale)); font-family: var(--mono); display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+    .btn-expand-json:hover { color: var(--text-primary); border-color: var(--text-muted); }
     .log-json-box .jk { color: var(--cyan); }
     .log-json-box .js { color: var(--green); }
     .log-json-box .jn { color: var(--amber); }
@@ -1815,11 +1820,11 @@ async function showLogDetail(id) {
     <div class="log-detail-section">
       <div class="log-detail-label">Raw Data</div>
       <details class="log-raw">
-        <summary>Request JSON (${reqSize} KB)</summary>
+        <summary>Request JSON (${reqSize} KB) <button class="btn-expand-json" onclick="event.stopPropagation();toggleJsonFullpage(this, 'Request JSON')">⛶ Fullpage</button></summary>
         <div class="log-json-box">${highlightJson(log.request_body)}</div>
       </details>
       <details class="log-raw">
-        <summary>Response JSON (${resSize} KB)</summary>
+        <summary>Response JSON (${resSize} KB) <button class="btn-expand-json" onclick="event.stopPropagation();toggleJsonFullpage(this, 'Response JSON')">⛶ Fullpage</button></summary>
         <div class="log-json-box">${highlightJson(log.response_body)}</div>
       </details>
     </div>
@@ -1829,12 +1834,40 @@ async function showLogDetail(id) {
 }
 
 function closeLogModal() {
+  document.querySelectorAll('.log-json-box.fullpage').forEach(box => {
+    const bar = box.querySelector('.log-json-fullpage-bar');
+    if (bar) bar.remove();
+    box.classList.remove('fullpage');
+  });
+  document.body.style.overflow = '';
   document.getElementById('log-modal').classList.remove('open');
   document.getElementById('log-modal-dialog').classList.remove('fullscreen');
 }
 
 function toggleLogFullscreen() {
   document.getElementById('log-modal-dialog').classList.toggle('fullscreen');
+}
+
+function toggleJsonFullpage(btn, title) {
+  const details = btn.closest('details');
+  const box = details.querySelector('.log-json-box');
+  if (box.classList.contains('fullpage')) {
+    // exit fullpage
+    const bar = box.querySelector('.log-json-fullpage-bar');
+    if (bar) bar.remove();
+    box.classList.remove('fullpage');
+    btn.textContent = '⛶ Fullpage';
+    document.body.style.overflow = '';
+  } else {
+    // enter fullpage
+    box.classList.add('fullpage');
+    const bar = document.createElement('div');
+    bar.className = 'log-json-fullpage-bar';
+    bar.innerHTML = `<span>${title}</span><button class="btn" onclick="toggleJsonFullpage(this.closest('.log-json-box').parentElement.querySelector('.btn-expand-json'), '${title}')">✕ Close</button>`;
+    box.prepend(bar);
+    btn.textContent = '✕ Exit';
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 function highlightJson(str) {
