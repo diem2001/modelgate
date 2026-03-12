@@ -9,6 +9,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      --scale: 1;
       --bg-void: #06060a;
       --bg-deep: #0a0a10;
       --bg-surface: #0f0f18;
@@ -89,9 +90,9 @@
     .app {
       position: relative;
       z-index: 1;
-      max-width: 920px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 0 24px 80px;
+      padding: 0 clamp(16px, 3vw, 48px) 80px;
     }
 
     /* ── Top Bar ── */
@@ -109,7 +110,7 @@
     }
 
     .topbar-inner {
-      max-width: 920px;
+      max-width: 1400px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -127,7 +128,7 @@
       justify-content: center;
       font-family: var(--mono);
       font-weight: 600;
-      font-size: 15px;
+      font-size: calc(15px * var(--scale));
       color: #fff;
       letter-spacing: -1px;
       flex-shrink: 0;
@@ -143,7 +144,7 @@
 
     .topbar-title {
       font-family: var(--mono);
-      font-size: 14px;
+      font-size: calc(14px * var(--scale));
       font-weight: 500;
       color: var(--text-primary);
       letter-spacing: -0.3px;
@@ -157,7 +158,7 @@
 
     .topbar-subtitle {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       color: var(--text-muted);
       letter-spacing: 0.3px;
     }
@@ -174,7 +175,7 @@
       align-items: center;
       gap: 6px;
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.8px;
@@ -216,7 +217,7 @@
 
     .nav-tab {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -276,7 +277,7 @@
 
     .panel-toolbar-label {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 1.2px;
@@ -290,7 +291,7 @@
     /* ── Buttons ── */
     .btn {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       font-weight: 500;
       padding: 7px 14px;
       border-radius: var(--radius-sm);
@@ -324,7 +325,7 @@
 
     .btn-sm {
       padding: 4px 10px;
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
     }
 
     .btn-icon {
@@ -355,7 +356,8 @@
     /* ── Backend Cards ── */
     .backends-grid {
       display: grid;
-      gap: 2px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 4px;
     }
 
     .backend-card {
@@ -366,9 +368,11 @@
       transition: all var(--transition);
       cursor: default;
       border-radius: var(--radius);
+      border: 1px solid transparent;
     }
     .backend-card:hover {
       background: var(--bg-card-hover);
+      border-color: var(--border-subtle);
     }
 
     .backend-icon {
@@ -380,7 +384,7 @@
       justify-content: center;
       font-family: var(--mono);
       font-weight: 600;
-      font-size: 13px;
+      font-size: calc(13px * var(--scale));
       color: #fff;
       flex-shrink: 0;
       position: relative;
@@ -401,7 +405,7 @@
 
     .backend-name {
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: calc(13px * var(--scale));
       font-weight: 500;
       color: var(--text-primary);
       margin-bottom: 2px;
@@ -409,7 +413,7 @@
 
     .backend-url {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       color: var(--text-ghost);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -425,7 +429,7 @@
 
     .tag {
       font-family: var(--mono);
-      font-size: 9px;
+      font-size: calc(9px * var(--scale));
       font-weight: 600;
       padding: 3px 7px;
       border-radius: 3px;
@@ -458,7 +462,7 @@
 
     .routing-header span {
       font-family: var(--mono);
-      font-size: 9px;
+      font-size: calc(9px * var(--scale));
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1.2px;
@@ -479,7 +483,7 @@
 
     .routing-row .row-num {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       color: var(--text-ghost);
       text-align: center;
       width: 22px;
@@ -493,7 +497,7 @@
     .routing-row input,
     .routing-row select {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       color: var(--text-primary);
       background: transparent;
       border: 1px solid transparent;
@@ -554,7 +558,7 @@
 
     .settings-label h4 {
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: calc(12px * var(--scale));
       font-weight: 500;
       color: var(--text-primary);
       margin-bottom: 3px;
@@ -563,7 +567,7 @@
 
     .settings-label p {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       color: var(--text-muted);
       line-height: 1.5;
     }
@@ -577,7 +581,7 @@
 
     .org-empty-warning {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       color: var(--red);
       background: var(--red-dim);
       padding: 8px 12px;
@@ -592,7 +596,7 @@
     .org-empty-warning::before {
       content: '!';
       font-weight: 700;
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       width: 18px;
       height: 18px;
       line-height: 18px;
@@ -608,13 +612,13 @@
       background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
     }
     .logs-filters select, .logs-filters input {
-      font-size: 11px; padding: 6px 10px; flex: 1; min-width: 0;
+      font-size: calc(11px * var(--scale)); padding: 6px 10px; flex: 1; min-width: 0;
     }
     .logs-quick-dates {
       display: flex; gap: 4px; padding: 8px 16px;
       border-bottom: 1px solid var(--border-subtle);
     }
-    .log-date-btn { font-size: 10px; padding: 3px 10px; }
+    .log-date-btn { font-size: calc(10px * var(--scale)); padding: 3px 10px; }
     .log-date-btn.active { background: var(--accent-dim); color: var(--accent-bright); border-color: var(--accent); }
     .logs-list { min-height: 100px; }
     .log-row {
@@ -624,39 +628,39 @@
     }
     .log-row:hover { background: var(--bg-card-hover); }
     .log-row.error { border-left: 3px solid var(--red); }
-    .log-time { font-family: var(--mono); font-size: 10px; color: var(--text-ghost); white-space: nowrap; width: 58px; flex-shrink: 0; }
-    .log-model { font-family: var(--mono); font-size: 11px; color: var(--accent-bright); font-weight: 600; min-width: 120px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; width: 58px; flex-shrink: 0; }
+    .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; min-width: 120px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .log-meta { flex: 1; min-width: 0; }
-    .log-input-preview { font-family: var(--mono); font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .log-tokens { font-family: var(--mono); font-size: 9px; color: var(--text-ghost); margin-top: 2px; }
+    .log-input-preview { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-tokens { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost); margin-top: 2px; }
     .log-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .log-status { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
+    .log-status { font-family: var(--mono); font-size: calc(10px * var(--scale)); font-weight: 600; padding: 2px 6px; border-radius: 3px; }
     .log-status.s2xx { background: var(--green-dim); color: var(--green); }
     .log-status.s4xx { background: var(--amber-dim); color: var(--amber); }
     .log-status.s5xx { background: var(--red-dim); color: var(--red); }
-    .log-duration { font-family: var(--mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; }
-    .log-cost { font-family: var(--mono); font-size: 10px; color: var(--amber); white-space: nowrap; }
+    .log-duration { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); white-space: nowrap; }
+    .log-cost { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--amber); white-space: nowrap; }
 
     /* Log detail */
     .log-detail-section { margin-bottom: 20px; }
-    .log-detail-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-ghost); margin-bottom: 8px; }
-    .log-detail-header { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+    .log-detail-label { font-family: var(--mono); font-size: calc(9px * var(--scale)); text-transform: uppercase; letter-spacing: 1px; color: var(--text-ghost); margin-bottom: 8px; }
+    .log-detail-header { font-family: var(--mono); font-size: calc(12px * var(--scale)); color: var(--text-secondary); margin-bottom: 16px; }
     .log-token-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .log-token-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); width: 70px; flex-shrink: 0; }
+    .log-token-label { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); width: 70px; flex-shrink: 0; }
     .log-token-bar-bg { flex: 1; height: 14px; background: var(--bg-inset); border-radius: 3px; overflow: hidden; }
     .log-token-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
-    .log-token-value { font-family: var(--mono); font-size: 10px; color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
-    .log-text-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
-    .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: 10px; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
+    .log-token-value { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
+    .log-text-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+    .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: calc(10px * var(--scale)); white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
     .log-json-box .jk { color: var(--cyan); }
     .log-json-box .js { color: var(--green); }
     .log-json-box .jn { color: var(--amber); }
     .log-json-box .jb { color: var(--purple); }
     .log-json-box .jp { color: var(--text-ghost); }
     .log-tools-list { display: flex; flex-wrap: wrap; gap: 4px; }
-    .log-tool-tag { font-family: var(--mono); font-size: 9px; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; background: var(--amber-dim); color: var(--amber); }
+    .log-tool-tag { font-family: var(--mono); font-size: calc(9px * var(--scale)); text-transform: uppercase; padding: 2px 8px; border-radius: 3px; background: var(--amber-dim); color: var(--amber); }
     details.log-raw { margin-top: 8px; }
-    details.log-raw summary { font-family: var(--mono); font-size: 10px; color: var(--text-muted); cursor: pointer; padding: 6px 0; user-select: none; }
+    details.log-raw summary { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); cursor: pointer; padding: 6px 0; user-select: none; }
     details.log-raw summary:hover { color: var(--text-secondary); }
 
     /* ── Modal ── */
@@ -680,7 +684,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       width: 100%;
-      max-width: 500px;
+      max-width: min(90vw, 560px);
       animation: modalIn 0.25s var(--ease);
       box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.05);
       overflow: hidden;
@@ -694,7 +698,7 @@
 
     .modal-header h3 {
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: calc(13px * var(--scale));
       font-weight: 500;
       color: var(--text-primary);
     }
@@ -710,7 +714,7 @@
     .form-group label {
       display: block;
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -721,7 +725,7 @@
     .form-input {
       width: 100%;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: calc(12px * var(--scale));
       color: var(--text-primary);
       background: var(--bg-inset);
       border: 1px solid var(--border);
@@ -748,7 +752,7 @@
       gap: 10px;
       cursor: pointer;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       color: var(--text-secondary);
       padding-top: 26px;
     }
@@ -782,7 +786,7 @@
     }
 
     .form-hint {
-      font-size: 10px;
+      font-size: calc(10px * var(--scale));
       color: var(--text-ghost);
       margin-top: 4px;
       font-family: var(--mono);
@@ -803,7 +807,7 @@
       top: 68px;
       right: 24px;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: calc(11px * var(--scale));
       font-weight: 500;
       padding: 10px 16px 10px 12px;
       border-radius: var(--radius);
@@ -835,7 +839,7 @@
       padding: 48px 20px;
       color: var(--text-ghost);
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: calc(12px * var(--scale));
     }
 
     /* ── Animations ── */
@@ -875,7 +879,7 @@
     }
     .provider-prefs-title {
       font-family: var(--mono);
-      font-size: 9px;
+      font-size: calc(9px * var(--scale));
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -954,7 +958,7 @@
         <div class="panel-toolbar">
           <span class="panel-toolbar-label" id="logs-count">0 entries</span>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <span id="logs-cost" style="font-family: var(--mono); font-size: 11px; color: var(--amber);"></span>
+            <span id="logs-cost" style="font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--amber);"></span>
             <button class="btn btn-sm" onclick="loadLogs()" title="Refresh">
               <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
               Refresh
@@ -993,6 +997,20 @@
         <div class="settings-group">
           <div class="settings-row">
             <div class="settings-label">
+              <h4>UI Scale</h4>
+              <p>Adjust text and element size across the admin panel</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="scale-label" style="font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--text-secondary); min-width: 40px; text-align: right;">100%</span>
+              <input id="ui-scale" type="range" min="80" max="200" step="10" value="100" oninput="setScale(this.value)"
+                style="width: 160px; accent-color: var(--accent);">
+              <button class="btn btn-sm" onclick="setScale(100); document.getElementById('ui-scale').value=100;">Reset</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">
               <h4>Auth Cache TTL</h4>
               <p>Minutes before re-validating tokens with Anthropic</p>
             </div>
@@ -1025,7 +1043,7 @@
             <input id="retention-days" type="number" min="1" class="form-input" style="width: 80px; text-align: center;" value="14">
             <button class="btn btn-primary btn-sm" onclick="saveRetention()">Save</button>
           </div>
-          <div id="log-retention-status" style="font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding-top: 8px;"></div>
+          <div id="log-retention-status" style="font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); padding-top: 8px;"></div>
         </div>
       </div>
     </div>
@@ -1113,7 +1131,7 @@
 
   <!-- Log Detail Modal -->
   <div id="log-modal" class="modal-overlay" onclick="if(event.target===this)closeLogModal()">
-    <div class="modal" style="max-width: 780px;">
+    <div class="modal" style="max-width: min(90vw, 900px);">
       <div class="modal-header">
         <h3 id="log-modal-title">Request Detail</h3>
       </div>
@@ -1126,6 +1144,27 @@ const API = '/admin/api';
 let backends = {};
 let rules = [];
 let backendNames = [];
+
+// ── UI Scale ──
+function setScale(pct) {
+  const v = Math.max(80, Math.min(200, Number(pct)));
+  document.documentElement.style.setProperty('--scale', v / 100);
+  document.getElementById('scale-label').textContent = v + '%';
+  localStorage.setItem('mg-ui-scale', v);
+}
+(function restoreScale() {
+  const saved = localStorage.getItem('mg-ui-scale');
+  if (saved) {
+    const v = Number(saved);
+    document.documentElement.style.setProperty('--scale', v / 100);
+    setTimeout(() => {
+      const slider = document.getElementById('ui-scale');
+      const label = document.getElementById('scale-label');
+      if (slider) slider.value = v;
+      if (label) label.textContent = v + '%';
+    }, 0);
+  }
+})();
 
 // ── Tab switching ──
 
@@ -1657,9 +1696,9 @@ function renderLogs(append) {
     const cached = log.cached_tokens ? ` · ${fmtK(log.cached_tokens)} cached` : '';
     const tokens = `${fmtK(log.input_tokens)} in${cached} · ${fmtK(log.output_tokens)} out`;
     const backendTag = log.provider_hint
-      ? `<span class="tag tag-mode-openrouter" style="font-size:9px">${log.backend} via ${log.provider_hint}</span>`
-      : `<span class="tag tag-mode-openai" style="font-size:9px">${log.backend}</span>`;
-    const streamTag = log.stream ? ' <span style="font-size:8px;color:var(--text-ghost)">SSE</span>' : '';
+      ? `<span class="tag tag-mode-openrouter" style="font-size: calc(9px * var(--scale))">${log.backend} via ${log.provider_hint}</span>`
+      : `<span class="tag tag-mode-openai" style="font-size: calc(9px * var(--scale))">${log.backend}</span>`;
+    const streamTag = log.stream ? ' <span style="font-size: calc(8px * var(--scale));color:var(--text-ghost)">SSE</span>' : '';
 
     return `<div class="log-row${errorClass}" onclick="showLogDetail(${log.id})">
       <div class="log-time">${date}<br>${time}</div>
@@ -1714,7 +1753,7 @@ async function showLogDetail(id) {
     { label: 'Reasoning', value: log.reasoning_tokens, color: 'var(--amber)', extra: '' },
   ].filter(t => t.value > 0);
 
-  const costLine = log.cost ? `<div style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:8px">Cost: $${log.cost.toFixed(4)}</div>` : '';
+  const costLine = log.cost ? `<div style="font-family:var(--mono);font-size: calc(11px * var(--scale));color:var(--amber);margin-top:8px">Cost: $${log.cost.toFixed(4)}</div>` : '';
 
   // Tool calls
   let toolCalls = [];
