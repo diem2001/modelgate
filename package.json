@@ -20,10 +20,12 @@
   "license": "MIT",
   "dependencies": {
     "@hono/node-server": "^1.19.11",
+    "better-sqlite3": "^12.6.2",
     "hono": "^4.12.7",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.4.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

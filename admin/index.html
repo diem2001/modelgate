@@ -602,6 +602,63 @@
       flex-shrink: 0;
     }
 
+    /* ── Logs ── */
+    .logs-filters {
+      display: flex; gap: 8px; padding: 12px 16px;
+      background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
+    }
+    .logs-filters select, .logs-filters input {
+      font-size: 11px; padding: 6px 10px; flex: 1; min-width: 0;
+    }
+    .logs-quick-dates {
+      display: flex; gap: 4px; padding: 8px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .log-date-btn { font-size: 10px; padding: 3px 10px; }
+    .log-date-btn.active { background: var(--accent-dim); color: var(--accent-bright); border-color: var(--accent); }
+    .logs-list { min-height: 100px; }
+    .log-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer; transition: background var(--transition);
+    }
+    .log-row:hover { background: var(--bg-card-hover); }
+    .log-row.error { border-left: 3px solid var(--red); }
+    .log-time { font-family: var(--mono); font-size: 10px; color: var(--text-ghost); white-space: nowrap; width: 58px; flex-shrink: 0; }
+    .log-model { font-family: var(--mono); font-size: 11px; color: var(--accent-bright); font-weight: 600; min-width: 120px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-meta { flex: 1; min-width: 0; }
+    .log-input-preview { font-family: var(--mono); font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-tokens { font-family: var(--mono); font-size: 9px; color: var(--text-ghost); margin-top: 2px; }
+    .log-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .log-status { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
+    .log-status.s2xx { background: var(--green-dim); color: var(--green); }
+    .log-status.s4xx { background: var(--amber-dim); color: var(--amber); }
+    .log-status.s5xx { background: var(--red-dim); color: var(--red); }
+    .log-duration { font-family: var(--mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+    .log-cost { font-family: var(--mono); font-size: 10px; color: var(--amber); white-space: nowrap; }
+
+    /* Log detail */
+    .log-detail-section { margin-bottom: 20px; }
+    .log-detail-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-ghost); margin-bottom: 8px; }
+    .log-detail-header { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+    .log-token-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .log-token-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); width: 70px; flex-shrink: 0; }
+    .log-token-bar-bg { flex: 1; height: 14px; background: var(--bg-inset); border-radius: 3px; overflow: hidden; }
+    .log-token-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+    .log-token-value { font-family: var(--mono); font-size: 10px; color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
+    .log-text-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+    .log-json-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; font-family: var(--mono); font-size: 10px; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
+    .log-json-box .jk { color: var(--cyan); }
+    .log-json-box .js { color: var(--green); }
+    .log-json-box .jn { color: var(--amber); }
+    .log-json-box .jb { color: var(--purple); }
+    .log-json-box .jp { color: var(--text-ghost); }
+    .log-tools-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .log-tool-tag { font-family: var(--mono); font-size: 9px; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; background: var(--amber-dim); color: var(--amber); }
+    details.log-raw { margin-top: 8px; }
+    details.log-raw summary { font-family: var(--mono); font-size: 10px; color: var(--text-muted); cursor: pointer; padding: 6px 0; user-select: none; }
+    details.log-raw summary:hover { color: var(--text-secondary); }
+
     /* ── Modal ── */
     .modal-overlay {
       position: fixed;
@@ -849,6 +906,7 @@
     <div class="sections-nav">
       <div class="nav-tab active" onclick="switchTab('backends')">Backends</div>
       <div class="nav-tab" onclick="switchTab('routing')">Routing</div>
+      <div class="nav-tab" onclick="switchTab('logs')">Logs</div>
       <div class="nav-tab" onclick="switchTab('settings')">Settings</div>
     </div>
 
@@ -891,6 +949,45 @@
         </div>
       </div>
 
+      <!-- Logs Section -->
+      <div class="panel-section" id="sec-logs">
+        <div class="panel-toolbar">
+          <span class="panel-toolbar-label" id="logs-count">0 entries</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="logs-cost" style="font-family: var(--mono); font-size: 11px; color: var(--amber);"></span>
+            <button class="btn btn-sm" onclick="loadLogs()" title="Refresh">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div class="logs-filters">
+          <select id="log-filter-model" class="form-input" onchange="loadLogs()">
+            <option value="">All Models</option>
+          </select>
+          <select id="log-filter-backend" class="form-input" onchange="loadLogs()">
+            <option value="">All Backends</option>
+          </select>
+          <select id="log-filter-status" class="form-input" onchange="loadLogs()">
+            <option value="">All Status</option>
+            <option value="2xx">2xx Success</option>
+            <option value="4xx">4xx Client Error</option>
+            <option value="5xx">5xx Server Error</option>
+          </select>
+          <input id="log-filter-search" type="text" class="form-input" placeholder="Search..." oninput="debounceLoadLogs()">
+        </div>
+        <div class="logs-quick-dates">
+          <button class="btn btn-sm log-date-btn active" onclick="setDateRange('today')">Today</button>
+          <button class="btn btn-sm log-date-btn" onclick="setDateRange('7d')">7d</button>
+          <button class="btn btn-sm log-date-btn" onclick="setDateRange('14d')">14d</button>
+          <button class="btn btn-sm log-date-btn" onclick="setDateRange('all')">All</button>
+        </div>
+        <div id="logs-list" class="logs-list"></div>
+        <div id="logs-load-more" style="display:none; text-align: center; padding: 16px;">
+          <button class="btn btn-sm" onclick="loadMoreLogs()">Load More</button>
+        </div>
+      </div>
+
       <!-- Settings Section -->
       <div class="panel-section" id="sec-settings">
         <div class="settings-group">
@@ -918,6 +1015,17 @@
             </div>
           </div>
           <div id="org-ids-list"></div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">
+              <h4>Log Retention</h4>
+              <p>Days to keep request logs before automatic cleanup</p>
+            </div>
+            <input id="retention-days" type="number" min="1" class="form-input" style="width: 80px; text-align: center;" value="14">
+            <button class="btn btn-primary btn-sm" onclick="saveRetention()">Save</button>
+          </div>
+          <div id="log-retention-status" style="font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding-top: 8px;"></div>
         </div>
       </div>
     </div>
@@ -1003,6 +1111,16 @@
     </div>
   </div>
 
+  <!-- Log Detail Modal -->
+  <div id="log-modal" class="modal-overlay" onclick="if(event.target===this)closeLogModal()">
+    <div class="modal" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3 id="log-modal-title">Request Detail</h3>
+      </div>
+      <div class="modal-body" id="log-modal-body" style="max-height: 70vh; overflow-y: auto;"></div>
+    </div>
+  </div>
+
 <script>
 const API = '/admin/api';
 let backends = {};
@@ -1013,11 +1131,12 @@ let backendNames = [];
 
 function switchTab(name) {
   document.querySelectorAll('.nav-tab').forEach((t, i) => {
-    const tabs = ['backends', 'routing', 'settings'];
+    const tabs = ['backends', 'routing', 'logs', 'settings'];
     t.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
+  if (name === 'logs' && !logsLoaded) { loadLogStats(); loadLogs(); logsLoaded = true; }
 }
 
 // ── Data loading ──
@@ -1325,7 +1444,7 @@ function closeModal() {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); closeLogModal(); }
 });
 
 // ── Toast ──
@@ -1406,6 +1525,286 @@ async function saveCacheTtl() {
   });
   if (res.ok) toast('Cache TTL saved');
   else toast('Failed to save', 'error');
+}
+
+// ── Logs ──
+
+let logsLoaded = false;
+let logsData = [];
+let logsTotal = 0;
+let logsOffset = 0;
+let logDateRange = 'today';
+let debounceTimer;
+
+function debounceLoadLogs() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadLogs(), 300);
+}
+
+function setDateRange(range) {
+  logDateRange = range;
+  document.querySelectorAll('.log-date-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  loadLogs();
+}
+
+function getDateFrom() {
+  const now = new Date();
+  if (logDateRange === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  }
+  if (logDateRange === '7d') {
+    return new Date(now.getTime() - 7 * 86400000).toISOString();
+  }
+  if (logDateRange === '14d') {
+    return new Date(now.getTime() - 14 * 86400000).toISOString();
+  }
+  return '';
+}
+
+async function loadLogStats() {
+  try {
+    const stats = await fetch(`${API}/logs/stats`).then(r => r.json());
+    // Populate filter dropdowns
+    const modelSel = document.getElementById('log-filter-model');
+    const backendSel = document.getElementById('log-filter-backend');
+    const curModel = modelSel.value;
+    const curBackend = backendSel.value;
+    modelSel.innerHTML = '<option value="">All Models</option>' +
+      stats.models.map(m => `<option value="${m}" ${m===curModel?'selected':''}>${m}</option>`).join('');
+    backendSel.innerHTML = '<option value="">All Backends</option>' +
+      stats.backends.map(b => `<option value="${b}" ${b===curBackend?'selected':''}>${b}</option>`).join('');
+    // Retention
+    document.getElementById('retention-days').value = stats.retentionDays;
+    const sizeKB = (stats.dbSizeBytes / 1024).toFixed(0);
+    const sizeMB = (stats.dbSizeBytes / 1048576).toFixed(1);
+    const sizeStr = stats.dbSizeBytes > 1048576 ? `${sizeMB} MB` : `${sizeKB} KB`;
+    document.getElementById('log-retention-status').textContent =
+      `${stats.totalCount.toLocaleString()} logs · ${sizeStr} · Retention: ${stats.retentionDays} days`;
+  } catch { /* ignore */ }
+}
+
+async function loadLogs() {
+  logsOffset = 0;
+  logsData = [];
+  const params = new URLSearchParams();
+  const model = document.getElementById('log-filter-model').value;
+  const backend = document.getElementById('log-filter-backend').value;
+  const status = document.getElementById('log-filter-status').value;
+  const search = document.getElementById('log-filter-search').value;
+  const from = getDateFrom();
+  if (model) params.set('model', model);
+  if (backend) params.set('backend', backend);
+  if (status) params.set('status', status);
+  if (search) params.set('search', search);
+  if (from) params.set('from', from);
+  params.set('limit', '50');
+  params.set('offset', '0');
+
+  try {
+    const res = await fetch(`${API}/logs?${params}`).then(r => r.json());
+    logsData = res.logs;
+    logsTotal = res.total;
+    logsOffset = logsData.length;
+    renderLogs(false);
+    document.getElementById('logs-count').textContent =
+      `${logsTotal.toLocaleString()} entries`;
+    // Calculate total cost
+    loadLogStats();
+  } catch {
+    document.getElementById('logs-list').innerHTML = '<div class="empty-state">Failed to load logs</div>';
+  }
+}
+
+async function loadMoreLogs() {
+  const params = new URLSearchParams();
+  const model = document.getElementById('log-filter-model').value;
+  const backend = document.getElementById('log-filter-backend').value;
+  const status = document.getElementById('log-filter-status').value;
+  const search = document.getElementById('log-filter-search').value;
+  const from = getDateFrom();
+  if (model) params.set('model', model);
+  if (backend) params.set('backend', backend);
+  if (status) params.set('status', status);
+  if (search) params.set('search', search);
+  if (from) params.set('from', from);
+  params.set('limit', '50');
+  params.set('offset', String(logsOffset));
+
+  const res = await fetch(`${API}/logs?${params}`).then(r => r.json());
+  logsData.push(...res.logs);
+  logsOffset = logsData.length;
+  renderLogs(false);
+}
+
+function renderLogs(append) {
+  const el = document.getElementById('logs-list');
+  if (logsData.length === 0) {
+    el.innerHTML = '<div class="empty-state">No request logs yet</div>';
+    document.getElementById('logs-load-more').style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = logsData.map(log => {
+    const ts = new Date(log.timestamp);
+    const time = ts.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const date = ts.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+    const statusClass = log.status < 300 ? 's2xx' : log.status < 500 ? 's4xx' : 's5xx';
+    const errorClass = log.status >= 400 ? ' error' : '';
+    const dur = log.duration_ms < 1000 ? `${log.duration_ms}ms` : `${(log.duration_ms/1000).toFixed(1)}s`;
+    const costStr = log.cost ? `$${log.cost.toFixed(4)}` : '';
+    const preview = (log.input_text || '').replace(/\s+/g, ' ').slice(0, 100) || '(empty)';
+    const cached = log.cached_tokens ? ` · ${fmtK(log.cached_tokens)} cached` : '';
+    const tokens = `${fmtK(log.input_tokens)} in${cached} · ${fmtK(log.output_tokens)} out`;
+    const backendTag = log.provider_hint
+      ? `<span class="tag tag-mode-openrouter" style="font-size:9px">${log.backend} via ${log.provider_hint}</span>`
+      : `<span class="tag tag-mode-openai" style="font-size:9px">${log.backend}</span>`;
+    const streamTag = log.stream ? ' <span style="font-size:8px;color:var(--text-ghost)">SSE</span>' : '';
+
+    return `<div class="log-row${errorClass}" onclick="showLogDetail(${log.id})">
+      <div class="log-time">${date}<br>${time}</div>
+      <div class="log-model">${log.model}${streamTag}</div>
+      <div class="log-meta">
+        <div class="log-input-preview">${escHtml(preview)}</div>
+        <div class="log-tokens">${tokens}</div>
+      </div>
+      <div class="log-right">
+        ${backendTag}
+        <span class="log-status ${statusClass}">${log.status}</span>
+        <span class="log-duration">${dur}</span>
+        ${costStr ? `<span class="log-cost">${costStr}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('logs-load-more').style.display =
+    logsOffset < logsTotal ? 'block' : 'none';
+}
+
+function fmtK(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function showLogDetail(id) {
+  const log = await fetch(`${API}/logs/${id}`).then(r => r.json());
+  if (log.error) return;
+
+  const ts = new Date(log.timestamp);
+  const timeStr = ts.toLocaleString('en-GB', { hour12: false });
+  const dur = log.duration_ms < 1000 ? `${log.duration_ms}ms` : `${(log.duration_ms/1000).toFixed(1)}s`;
+  const statusClass = log.status < 300 ? 's2xx' : log.status < 500 ? 's4xx' : 's5xx';
+  const streamLabel = log.stream ? 'stream' : 'sync';
+
+  document.getElementById('log-modal-title').textContent = `${log.model} → ${log.backend}`;
+
+  // Token bars
+  const maxToken = Math.max(log.input_tokens, log.output_tokens, log.cached_tokens, log.cache_write_tokens, log.reasoning_tokens, 1);
+  const cachePercent = log.input_tokens > 0 ? Math.round(log.cached_tokens / log.input_tokens * 100) : 0;
+
+  const tokenBars = [
+    { label: 'Input', value: log.input_tokens, color: 'var(--accent)', extra: '' },
+    { label: 'Cached', value: log.cached_tokens, color: 'var(--green)', extra: log.cached_tokens ? ` (${cachePercent}%)` : '' },
+    { label: 'Cache Write', value: log.cache_write_tokens, color: 'var(--cyan)', extra: '' },
+    { label: 'Output', value: log.output_tokens, color: 'var(--purple)', extra: '' },
+    { label: 'Reasoning', value: log.reasoning_tokens, color: 'var(--amber)', extra: '' },
+  ].filter(t => t.value > 0);
+
+  const costLine = log.cost ? `<div style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:8px">Cost: $${log.cost.toFixed(4)}</div>` : '';
+
+  // Tool calls
+  let toolCalls = [];
+  try { toolCalls = JSON.parse(log.tool_calls || '[]'); } catch {}
+  const toolsHtml = toolCalls.length > 0
+    ? `<div class="log-detail-section"><div class="log-detail-label">Tool Calls</div><div class="log-tools-list">${toolCalls.map(t => `<span class="log-tool-tag">${escHtml(t)}</span>`).join('')}</div></div>`
+    : '';
+
+  // Raw JSON
+  const reqSize = log.request_body ? (log.request_body.length / 1024).toFixed(1) : '0';
+  const resSize = log.response_body ? (log.response_body.length / 1024).toFixed(1) : '0';
+
+  document.getElementById('log-modal-body').innerHTML = `
+    <div class="log-detail-header">
+      ${timeStr} · <span class="log-status ${statusClass}">${log.status}</span> · ${dur} · ${streamLabel} · t${log.turns} · ${log.num_tools} tools
+    </div>
+
+    <div class="log-detail-section">
+      <div class="log-detail-label">Token Usage</div>
+      ${tokenBars.map(t => `
+        <div class="log-token-bar-row">
+          <span class="log-token-label">${t.label}</span>
+          <div class="log-token-bar-bg"><div class="log-token-bar" style="width:${(t.value/maxToken*100).toFixed(1)}%;background:${t.color}"></div></div>
+          <span class="log-token-value">${t.value.toLocaleString()}${t.extra}</span>
+        </div>
+      `).join('')}
+      ${costLine}
+    </div>
+
+    <div class="log-detail-section">
+      <div class="log-detail-label">User Input</div>
+      <div class="log-text-box">${escHtml(log.input_text || '(empty)')}</div>
+    </div>
+
+    <div class="log-detail-section">
+      <div class="log-detail-label">Assistant Output</div>
+      <div class="log-text-box">${escHtml(log.output_text || '(empty)')}</div>
+    </div>
+
+    ${toolsHtml}
+
+    <div class="log-detail-section">
+      <div class="log-detail-label">Raw Data</div>
+      <details class="log-raw">
+        <summary>Request JSON (${reqSize} KB)</summary>
+        <div class="log-json-box">${highlightJson(log.request_body)}</div>
+      </details>
+      <details class="log-raw">
+        <summary>Response JSON (${resSize} KB)</summary>
+        <div class="log-json-box">${highlightJson(log.response_body)}</div>
+      </details>
+    </div>
+  `;
+
+  document.getElementById('log-modal').classList.add('open');
+}
+
+function closeLogModal() {
+  document.getElementById('log-modal').classList.remove('open');
+}
+
+function highlightJson(str) {
+  if (!str) return '<span class="jp">(empty)</span>';
+  try {
+    str = JSON.stringify(JSON.parse(str), null, 2);
+  } catch { /* use as-is */ }
+  return escHtml(str)
+    .replace(/"([^"]+)":/g, '<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="js">"$1"</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span class="jn">$1</span>')
+    .replace(/: (true|false|null)/g, ': <span class="jb">$1</span>');
+}
+
+async function saveRetention() {
+  const days = parseInt(document.getElementById('retention-days').value, 10);
+  if (!days || days < 1) {
+    toast('Retention must be at least 1 day', 'error');
+    return;
+  }
+  const res = await fetch(`${API}/logs/retention`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ retentionDays: days }),
+  });
+  if (res.ok) {
+    toast(`Log retention set to ${days} days`);
+    loadLogStats();
+  } else {
+    toast('Failed to save retention', 'error');
+  }
 }
 
 // ── Init ──

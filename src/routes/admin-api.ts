@@ -3,6 +3,10 @@ import type { BackendConfig, RoutingRule } from '../config.js';
 import {
   getConfig, updateBackend, deleteBackend, updateRouting, updateAuth,
 } from '../config-store.js';
+import {
+  queryLogs, getLogById, getLogStats, getRetentionDays, setRetentionDays, purgeLogs,
+  type LogQuery,
+} from '../db.js';
 
 function sanitizeBackend(b: BackendConfig): Record<string, unknown> {
   const { apiKey, ...rest } = b;
@@ -145,6 +149,59 @@ export function createAdminApi(): Hono {
       rulesCount: config.routing.rules.length,
       auth: config.auth.enabled,
     });
+  });
+
+  // ── Logs API ──────────────────────────────────────
+
+  // GET /admin/api/logs — paginated list (no raw bodies)
+  app.get('/api/logs', (c) => {
+    const q: LogQuery = {
+      model: c.req.query('model') || undefined,
+      backend: c.req.query('backend') || undefined,
+      status: c.req.query('status') || undefined,
+      from: c.req.query('from') || undefined,
+      to: c.req.query('to') || undefined,
+      search: c.req.query('search') || undefined,
+      offset: c.req.query('offset') ? parseInt(c.req.query('offset')!, 10) : 0,
+      limit: c.req.query('limit') ? parseInt(c.req.query('limit')!, 10) : 50,
+    };
+    return c.json(queryLogs(q));
+  });
+
+  // GET /admin/api/logs/stats — aggregates for filters
+  app.get('/api/logs/stats', (c) => {
+    return c.json(getLogStats());
+  });
+
+  // GET /admin/api/logs/retention — current retention config
+  app.get('/api/logs/retention', (c) => {
+    return c.json({ retentionDays: getRetentionDays() });
+  });
+
+  // PUT /admin/api/logs/retention — update retention
+  app.put('/api/logs/retention', async (c) => {
+    const body = await c.req.json<{ retentionDays: number }>();
+    const days = Number(body.retentionDays);
+    if (isNaN(days) || days < 1) {
+      return c.json({ error: 'retentionDays must be a number >= 1' }, 400);
+    }
+    setRetentionDays(days);
+    return c.json({ ok: true, retentionDays: days });
+  });
+
+  // DELETE /admin/api/logs — manual purge
+  app.delete('/api/logs', async (c) => {
+    const before = c.req.query('before') || undefined;
+    const deleted = purgeLogs(before);
+    return c.json({ ok: true, deleted });
+  });
+
+  // GET /admin/api/logs/:id — single log with full bodies
+  app.get('/api/logs/:id', (c) => {
+    const id = parseInt(c.req.param('id'), 10);
+    const log = getLogById(id);
+    if (!log) return c.json({ error: 'Not found' }, 404);
+    return c.json(log);
   });
 
   return app;

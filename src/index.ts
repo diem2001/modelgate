@@ -6,6 +6,7 @@ import { initConfigStore, getConfig } from './config-store.js';
 import { createMessagesRoute } from './routes/messages.js';
 import { createAdminApi } from './routes/admin-api.js';
 import { initLogger } from './logger.js';
+import { initDb } from './db.js';
 import { extractToken, validateToken } from './auth.js';
 
 const configPath = process.argv[2];
@@ -15,6 +16,7 @@ const baseConfig = loadConfig(configPath);
 initConfigStore(baseConfig);
 
 initLogger(baseConfig.logging);
+initDb();
 
 const app = new Hono();
 
