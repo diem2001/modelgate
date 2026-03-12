@@ -18,6 +18,13 @@ export function extractToken(headers: Record<string, string>): string | null {
 export async function validateToken(token: string, config: AuthConfig): Promise<boolean> {
   if (!config.enabled) return true;
 
+  // OAuth session tokens (sk-ant-o*) cannot be validated against /v1/models.
+  // Pass them through — Anthropic will validate on the actual request.
+  if (token.startsWith('sk-ant-o')) {
+    console.log(`  [auth] OAuth token (${token.slice(0, 10)}…) — passthrough to Anthropic`);
+    return true;
+  }
+
   const cached = tokenCache.get(token);
   if (cached && Date.now() < cached.validUntil) {
     // Re-check org allowlist even for cached tokens (allowlist may have changed)
