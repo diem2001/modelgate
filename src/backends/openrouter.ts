@@ -202,6 +202,7 @@ function anthropicToOpenRouterFormat(req: AnthropicRequest): OpenAIRequest {
     top_p: req.top_p,
     stop: req.stop_sequences,
     stream: req.stream,
+    ...(req.stream ? { stream_options: { include_usage: true } } : {}),
     tools: convertTools(req.tools),
     tool_choice: req.tool_choice,
   };

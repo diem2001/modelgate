@@ -89,6 +89,7 @@ export interface OpenAIRequest {
   top_p?: number;
   stop?: string[];
   stream?: boolean;
+  stream_options?: { include_usage: boolean };
   tools?: OpenAITool[];
   tool_choice?: unknown;
   provider?: {
