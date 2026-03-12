@@ -9,51 +9,78 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-deep: #080b12;
-      --bg-surface: #0d1117;
-      --bg-card: #131820;
-      --bg-card-hover: #181f2a;
-      --bg-elevated: #1c2333;
-      --border: #1e2736;
-      --border-subtle: #161d29;
-      --border-focus: #2d9cdb;
-      --text-primary: #e6edf3;
-      --text-secondary: #8b949e;
-      --text-muted: #484f58;
-      --accent-cyan: #2d9cdb;
-      --accent-cyan-dim: rgba(45, 156, 219, 0.12);
-      --accent-cyan-glow: rgba(45, 156, 219, 0.25);
-      --accent-amber: #d4a053;
-      --accent-amber-dim: rgba(212, 160, 83, 0.12);
-      --accent-green: #3fb950;
-      --accent-green-dim: rgba(63, 185, 80, 0.12);
-      --accent-red: #f85149;
-      --accent-red-dim: rgba(248, 81, 73, 0.10);
-      --accent-purple: #a78bfa;
-      --accent-purple-dim: rgba(167, 139, 250, 0.12);
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
+      --bg-void: #06060a;
+      --bg-deep: #0a0a10;
+      --bg-surface: #0f0f18;
+      --bg-card: #121220;
+      --bg-card-hover: #16162a;
+      --bg-elevated: #1a1a2e;
+      --bg-inset: #08080e;
+      --border: #1e1e36;
+      --border-subtle: #14142a;
+      --border-active: #6366f1;
+      --text-primary: #ededf4;
+      --text-secondary: #9191a8;
+      --text-muted: #52526e;
+      --text-ghost: #3a3a52;
+      --accent: #6366f1;
+      --accent-dim: rgba(99, 102, 241, 0.10);
+      --accent-glow: rgba(99, 102, 241, 0.20);
+      --accent-bright: #818cf8;
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.10);
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.10);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.08);
+      --purple: #a78bfa;
+      --purple-dim: rgba(167, 139, 250, 0.10);
+      --cyan: #06b6d4;
+      --cyan-dim: rgba(6, 182, 212, 0.10);
+      --radius: 8px;
+      --radius-sm: 5px;
+      --radius-lg: 12px;
       --mono: 'JetBrains Mono', monospace;
       --sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --transition: 200ms var(--ease);
     }
 
     body {
       font-family: var(--sans);
-      background: var(--bg-deep);
+      background: var(--bg-void);
       color: var(--text-primary);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      overflow-y: auto;
     }
 
-    /* ── Dot grid background ── */
+    /* ── Engineered grid background ── */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: radial-gradient(circle, var(--border-subtle) 1px, transparent 1px);
-      background-size: 24px 24px;
+      background:
+        linear-gradient(var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 0%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 0%, transparent 100%);
+    }
+
+    /* ── Subtle top glow ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
       opacity: 0.4;
       pointer-events: none;
       z-index: 0;
@@ -62,101 +89,208 @@
     .app {
       position: relative;
       z-index: 1;
-      max-width: 960px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 40px 24px 80px;
+      padding: 0 24px 80px;
     }
 
-    /* ── Header ── */
-    .header {
+    /* ── Top Bar ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(6, 6, 10, 0.82);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
+      border-bottom: 1px solid var(--border-subtle);
+      margin: 0 -24px;
+      padding: 0 24px;
+      animation: slideDown 0.5s var(--ease);
+    }
+
+    .topbar-inner {
+      max-width: 920px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 48px;
-      animation: fadeDown 0.5s ease-out;
+      height: 56px;
+      gap: 14px;
     }
 
-    .header-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--accent-cyan), #1a6fa3);
+    .topbar-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: var(--mono);
       font-weight: 600;
-      font-size: 20px;
+      font-size: 15px;
       color: #fff;
       letter-spacing: -1px;
-      box-shadow: 0 0 20px var(--accent-cyan-glow);
+      flex-shrink: 0;
+      position: relative;
+    }
+    .topbar-logo::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 10px;
+      border: 1px solid var(--accent-glow);
     }
 
-    .header-text h1 {
+    .topbar-title {
       font-family: var(--mono);
-      font-size: 20px;
+      font-size: 14px;
       font-weight: 500;
-      letter-spacing: -0.5px;
       color: var(--text-primary);
+      letter-spacing: -0.3px;
     }
 
-    .header-text p {
-      font-size: 12px;
-      color: var(--text-muted);
+    .topbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    .topbar-subtitle {
       font-family: var(--mono);
-      font-weight: 300;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-top: 2px;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
     }
 
-    .header-status {
+    .topbar-status {
       margin-left: auto;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      box-shadow: 0 0 8px rgba(63, 185, 80, 0.5);
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    /* ── Sections ── */
-    .section {
-      margin-bottom: 40px;
-      animation: fadeUp 0.5s ease-out both;
-    }
-    .section:nth-child(2) { animation-delay: 0.08s; }
-    .section:nth-child(3) { animation-delay: 0.16s; }
-
-    .section-header {
+    .status-badge {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--green);
+      background: var(--green-dim);
+      padding: 4px 10px 4px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(34, 197, 94, 0.15);
     }
 
-    .section-title {
+    .status-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+      animation: blink 2.5s ease-in-out infinite;
+    }
+
+    .status-badge.offline {
+      color: var(--red);
+      background: var(--red-dim);
+      border-color: rgba(239, 68, 68, 0.15);
+    }
+    .status-badge.offline .status-led {
+      background: var(--red);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+      animation: none;
+    }
+
+    /* ── Tab-style section nav ── */
+    .sections-nav {
+      display: flex;
+      gap: 2px;
+      padding: 28px 0 0;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s var(--ease) 0.1s both;
+    }
+
+    .nav-tab {
       font-family: var(--mono);
       font-size: 11px;
       font-weight: 500;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      border-bottom: none;
+      background: transparent;
+      position: relative;
+    }
+    .nav-tab:hover {
+      color: var(--text-secondary);
+      background: var(--bg-card);
+    }
+    .nav-tab.active {
+      color: var(--accent-bright);
+      background: var(--bg-card);
+      border-color: var(--border);
+    }
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--bg-card);
+    }
+
+    /* ── Panel Container ── */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
+      overflow: hidden;
+      animation: fadeUp 0.4s var(--ease) 0.15s both;
+    }
+
+    .panel-section {
+      display: none;
+    }
+    .panel-section.active {
+      display: block;
+    }
+
+    .panel-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+
+    .panel-toolbar-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-ghost);
+    }
+
+    .panel-body {
+      padding: 4px;
     }
 
     /* ── Buttons ── */
     .btn {
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       padding: 7px 14px;
       border-radius: var(--radius-sm);
@@ -168,34 +302,34 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      letter-spacing: 0.2px;
     }
     .btn:hover {
       background: var(--bg-card-hover);
-      border-color: var(--accent-cyan);
-      color: var(--accent-cyan);
-      box-shadow: 0 0 12px var(--accent-cyan-dim);
+      border-color: var(--text-muted);
+      color: var(--text-primary);
     }
 
     .btn-primary {
-      background: var(--accent-cyan);
-      border-color: var(--accent-cyan);
+      background: var(--accent);
+      border-color: var(--accent);
       color: #fff;
     }
     .btn-primary:hover {
-      background: #3aade8;
-      border-color: #3aade8;
+      background: var(--accent-bright);
+      border-color: var(--accent-bright);
       color: #fff;
-      box-shadow: 0 0 20px var(--accent-cyan-glow);
+      box-shadow: 0 0 20px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.3);
     }
 
     .btn-sm {
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 4px 10px;
+      font-size: 10px;
     }
 
     .btn-icon {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       padding: 0;
       display: flex;
       align-items: center;
@@ -203,7 +337,7 @@
       border-radius: var(--radius-sm);
       border: 1px solid transparent;
       background: transparent;
-      color: var(--text-muted);
+      color: var(--text-ghost);
       cursor: pointer;
       transition: all var(--transition);
     }
@@ -213,66 +347,70 @@
       border-color: var(--border);
     }
     .btn-icon.danger:hover {
-      background: var(--accent-red-dim);
-      color: var(--accent-red);
-      border-color: rgba(248, 81, 73, 0.2);
+      background: var(--red-dim);
+      color: var(--red);
+      border-color: rgba(239, 68, 68, 0.18);
     }
 
     /* ── Backend Cards ── */
     .backends-grid {
       display: grid;
-      gap: 12px;
+      gap: 2px;
     }
 
     .backend-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       transition: all var(--transition);
       cursor: default;
+      border-radius: var(--radius);
     }
     .backend-card:hover {
-      border-color: var(--border-focus);
       background: var(--bg-card-hover);
-      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02);
     }
 
     .backend-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-md);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius);
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: var(--mono);
       font-weight: 600;
-      font-size: 15px;
+      font-size: 13px;
       color: #fff;
       flex-shrink: 0;
+      position: relative;
     }
-    .backend-icon.anthropic { background: linear-gradient(135deg, #d4763a, #c25e28); }
-    .backend-icon.lmstudio { background: linear-gradient(135deg, #2d9cdb, #1a6fa3); }
-    .backend-icon.openrouter { background: linear-gradient(135deg, #3fb950, #238636); }
-    .backend-icon.default { background: linear-gradient(135deg, #6e7681, #484f58); }
+    .backend-icon::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .backend-icon.anthropic { background: linear-gradient(145deg, #d97706, #b45309); }
+    .backend-icon.lmstudio { background: linear-gradient(145deg, #6366f1, #4f46e5); }
+    .backend-icon.openrouter { background: linear-gradient(145deg, #22c55e, #16a34a); }
+    .backend-icon.default { background: linear-gradient(145deg, #52526e, #3a3a52); }
 
     .backend-info { flex: 1; min-width: 0; }
 
     .backend-name {
       font-family: var(--mono);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-primary);
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .backend-url {
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
+      font-size: 10px;
+      color: var(--text-ghost);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -281,65 +419,59 @@
     .backend-tags {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       flex-shrink: 0;
     }
 
     .tag {
       font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 500;
-      padding: 3px 8px;
-      border-radius: 4px;
-      letter-spacing: 0.3px;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 3px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
       white-space: nowrap;
     }
-    .tag-mode-anthropic { background: var(--accent-amber-dim); color: var(--accent-amber); }
-    .tag-mode-openai { background: var(--accent-purple-dim); color: var(--accent-purple); }
-    .tag-mode-openrouter { background: var(--accent-green-dim); color: var(--accent-green); }
-    .tag-optimized { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
-    .tag-key { background: var(--accent-green-dim); color: var(--accent-green); }
-    .tag-nokey { background: rgba(139, 148, 158, 0.08); color: var(--text-muted); }
+    .tag-mode-anthropic { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.12); }
+    .tag-mode-openai { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(167,139,250,0.12); }
+    .tag-mode-openrouter { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.12); }
+    .tag-optimized { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(6,182,212,0.12); }
+    .tag-key { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.12); }
+    .tag-nokey { background: rgba(82,82,110,0.08); color: var(--text-ghost); border: 1px solid rgba(82,82,110,0.12); }
 
     .backend-actions {
       display: flex;
-      gap: 4px;
+      gap: 2px;
       flex-shrink: 0;
     }
 
     /* ── Routing Table ── */
-    .routing-table {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-    }
-
     .routing-header {
       display: grid;
-      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      grid-template-columns: 36px 1fr 1fr 1fr 80px;
       gap: 8px;
-      padding: 10px 16px;
+      padding: 10px 20px;
       background: var(--bg-surface);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .routing-header span {
       font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 500;
+      font-size: 9px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1.2px;
-      color: var(--text-muted);
+      color: var(--text-ghost);
     }
 
     .routing-row {
       display: grid;
-      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      grid-template-columns: 36px 1fr 1fr 1fr 80px;
       gap: 8px;
-      padding: 6px 16px;
+      padding: 4px 20px;
       align-items: center;
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid rgba(20, 20, 42, 0.6);
       transition: background var(--transition);
     }
     .routing-row:last-child { border-bottom: none; }
@@ -347,15 +479,21 @@
 
     .routing-row .row-num {
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
+      font-size: 10px;
+      color: var(--text-ghost);
       text-align: center;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      border-radius: 4px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
     }
 
     .routing-row input,
     .routing-row select {
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-primary);
       background: transparent;
       border: 1px solid transparent;
@@ -373,8 +511,8 @@
     .routing-row input:focus,
     .routing-row select:focus {
       background: var(--bg-elevated);
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 0 2px var(--accent-cyan-dim);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
     }
 
     .routing-row select option {
@@ -384,25 +522,93 @@
 
     .row-actions {
       display: flex;
-      gap: 2px;
+      gap: 1px;
       justify-content: center;
     }
 
     .routing-footer {
       display: flex;
       justify-content: flex-end;
-      padding: 12px 16px;
+      padding: 12px 20px;
       gap: 8px;
       border-top: 1px solid var(--border-subtle);
       background: var(--bg-surface);
+    }
+
+    /* ── Settings Panel ── */
+    .settings-group {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .settings-group:last-child { border-bottom: none; }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .settings-label {
+      flex: 1;
+    }
+
+    .settings-label h4 {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      letter-spacing: -0.2px;
+    }
+
+    .settings-label p {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .org-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .org-empty-warning {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--red);
+      background: var(--red-dim);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(239, 68, 68, 0.12);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .org-empty-warning::before {
+      content: '!';
+      font-weight: 700;
+      font-size: 11px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.18);
+      flex-shrink: 0;
     }
 
     /* ── Modal ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
+      background: rgba(6, 6, 10, 0.80);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -413,22 +619,31 @@
     }
 
     .modal {
-      background: var(--bg-card);
+      background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       width: 100%;
-      max-width: 480px;
-      padding: 28px;
-      animation: scaleIn 0.2s ease-out;
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+      max-width: 500px;
+      animation: modalIn 0.25s var(--ease);
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.05);
+      overflow: hidden;
     }
 
-    .modal h3 {
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+    }
+
+    .modal-header h3 {
       font-family: var(--mono);
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 500;
-      margin-bottom: 24px;
       color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 24px;
     }
 
     .form-group {
@@ -438,8 +653,8 @@
     .form-group label {
       display: block;
       font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 10px;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.8px;
@@ -449,9 +664,9 @@
     .form-input {
       width: 100%;
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-primary);
-      background: var(--bg-deep);
+      background: var(--bg-inset);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 10px 12px;
@@ -459,10 +674,10 @@
       transition: all var(--transition);
     }
     .form-input:focus {
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 0 3px var(--accent-cyan-dim);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
     }
-    .form-input::placeholder { color: var(--text-muted); }
+    .form-input::placeholder { color: var(--text-ghost); }
 
     .form-row {
       display: grid;
@@ -476,148 +691,193 @@
       gap: 10px;
       cursor: pointer;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       padding-top: 26px;
     }
 
     .form-checkbox input[type="checkbox"] {
       appearance: none;
-      width: 18px;
-      height: 18px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--bg-deep);
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      background: var(--bg-inset);
       cursor: pointer;
       position: relative;
       flex-shrink: 0;
       transition: all var(--transition);
     }
     .form-checkbox input[type="checkbox"]:checked {
-      background: var(--accent-cyan);
-      border-color: var(--accent-cyan);
+      background: var(--accent);
+      border-color: var(--accent);
     }
     .form-checkbox input[type="checkbox"]:checked::after {
-      content: '✓';
+      content: '';
       position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: #fff;
-      font-weight: 600;
+      top: 2px;
+      left: 5px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 1.5px 1.5px 0;
+      transform: rotate(45deg);
     }
 
     .form-hint {
-      font-size: 11px;
-      color: var(--text-muted);
+      font-size: 10px;
+      color: var(--text-ghost);
       margin-top: 4px;
       font-family: var(--mono);
     }
 
-    .modal-actions {
+    .modal-footer {
       display: flex;
       gap: 10px;
-      margin-top: 24px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-card);
     }
-    .modal-actions .btn { flex: 1; justify-content: center; padding: 10px; }
+    .modal-footer .btn { flex: 1; justify-content: center; padding: 10px; }
 
     /* ── Toast ── */
     .toast {
       position: fixed;
-      bottom: 24px;
+      top: 68px;
       right: 24px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      padding: 10px 16px;
-      border-radius: var(--radius-md);
+      padding: 10px 16px 10px 12px;
+      border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-elevated);
       color: var(--text-primary);
       opacity: 0;
-      transform: translateY(8px);
-      transition: all 0.3s ease;
+      transform: translateX(16px);
+      transition: all 0.35s var(--ease);
       pointer-events: none;
       z-index: 200;
       display: flex;
       align-items: center;
       gap: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
     .toast.visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(0);
     }
-    .toast.success { border-color: rgba(63, 185, 80, 0.3); }
-    .toast.success::before { content: '●'; color: var(--accent-green); font-size: 8px; }
-    .toast.error { border-color: rgba(248, 81, 73, 0.3); }
-    .toast.error::before { content: '●'; color: var(--accent-red); font-size: 8px; }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.success::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .toast.error { border-left: 3px solid var(--red); }
+    .toast.error::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-ghost);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
 
     /* ── Animations ── */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-8px); }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.97) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
-    @keyframes pulse {
+    @keyframes blink {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.35; }
     }
 
     /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     /* ── SVG Icons ── */
-    .icon { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .icon { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── Provider prefs nested panel ── */
+    .provider-prefs {
+      display: none;
+      margin-top: 4px;
+      padding: 16px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .provider-prefs-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-ghost);
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-logo">M</div>
-      <div class="header-text">
-        <h1>ModelGate</h1>
-        <p>LLM Proxy Admin</p>
-      </div>
-      <div class="header-status">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-text">connected</span>
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-logo">M</div>
+        <span class="topbar-title">ModelGate</span>
+        <div class="topbar-sep"></div>
+        <span class="topbar-subtitle">Admin Console</span>
+        <div class="topbar-status">
+          <div class="status-badge" id="status-badge">
+            <div class="status-led" id="status-dot"></div>
+            <span id="status-text">Online</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Backends -->
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">Backends</span>
-        <button class="btn" onclick="showAddBackend()">
-          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add
-        </button>
-      </div>
-      <div id="backends-list" class="backends-grid"></div>
-    </section>
+    <!-- Section Tabs -->
+    <div class="sections-nav">
+      <div class="nav-tab active" onclick="switchTab('backends')">Backends</div>
+      <div class="nav-tab" onclick="switchTab('routing')">Routing</div>
+      <div class="nav-tab" onclick="switchTab('settings')">Settings</div>
+    </div>
 
-    <!-- Routing Rules -->
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">Routing Rules</span>
-        <button class="btn" onclick="addRule()">
-          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Rule
-        </button>
+    <!-- Panel Container -->
+    <div class="panel">
+
+      <!-- Backends Section -->
+      <div class="panel-section active" id="sec-backends">
+        <div class="panel-toolbar">
+          <span class="panel-toolbar-label" id="backends-count">0 Backends</span>
+          <button class="btn btn-sm" onclick="showAddBackend()">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Backend
+          </button>
+        </div>
+        <div class="panel-body">
+          <div id="backends-list" class="backends-grid"></div>
+        </div>
       </div>
-      <div class="routing-table">
+
+      <!-- Routing Section -->
+      <div class="panel-section" id="sec-routing">
+        <div class="panel-toolbar">
+          <span class="panel-toolbar-label" id="rules-count">0 Rules</span>
+          <button class="btn btn-sm" onclick="addRule()">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Rule
+          </button>
+        </div>
         <div class="routing-header">
           <span>#</span>
           <span>Pattern</span>
@@ -627,40 +887,40 @@
         </div>
         <div id="rules-list"></div>
         <div class="routing-footer">
-          <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
+          <button class="btn btn-primary btn-sm" onclick="saveRules()">Save Rules</button>
         </div>
       </div>
-    </section>
-    <!-- Settings -->
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">Settings</span>
-      </div>
-      <div class="routing-table" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 18px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <div style="flex: 1;">
-            <label style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Auth Cache TTL (minutes)</label>
-            <div class="form-hint">How long validated tokens are cached before re-checking with Anthropic</div>
-          </div>
-          <input id="cache-ttl" type="number" min="1" class="form-input" style="width: 100px; text-align: center;" value="60">
-          <button class="btn btn-primary btn-sm" onclick="saveCacheTtl()">Save</button>
-        </div>
-        <div style="border-top: 1px solid var(--border-subtle); padding-top: 18px;">
-          <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
-            <div>
-              <label style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Allowed Organization IDs</label>
-              <div class="form-hint">Anthropic org IDs permitted to use this proxy. Empty = deny all requests.</div>
+
+      <!-- Settings Section -->
+      <div class="panel-section" id="sec-settings">
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">
+              <h4>Auth Cache TTL</h4>
+              <p>Minutes before re-validating tokens with Anthropic</p>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="saveOrgIds()">Save</button>
+            <input id="cache-ttl" type="number" min="1" class="form-input" style="width: 80px; text-align: center;" value="60">
+            <button class="btn btn-primary btn-sm" onclick="saveCacheTtl()">Save</button>
           </div>
-          <div id="org-ids-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
-          <button class="btn btn-sm" onclick="addOrgIdRow()" style="margin-top: 8px;">
-            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Org ID
-          </button>
+        </div>
+        <div class="settings-group">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+            <div class="settings-label">
+              <h4>Organization Allowlist</h4>
+              <p>Anthropic org IDs permitted to use this proxy</p>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button class="btn btn-sm" onclick="addOrgIdRow()">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="saveOrgIds()">Save</button>
+            </div>
+          </div>
+          <div id="org-ids-list"></div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 
   <!-- Toast -->
@@ -669,73 +929,77 @@
   <!-- Modal -->
   <div id="modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal">
-      <h3 id="modal-title">Add Backend</h3>
-      <form id="backend-form" onsubmit="saveBackend(event)">
-        <div class="form-group">
-          <label>Name</label>
-          <input id="be-name" type="text" required class="form-input" placeholder="my-backend">
-        </div>
-        <div class="form-group">
-          <label>URL</label>
-          <input id="be-url" type="text" required class="form-input" placeholder="https://api.example.com">
-        </div>
-        <div class="form-group">
-          <label>API Key</label>
-          <input id="be-key" type="text" class="form-input" placeholder="sk-...">
-          <div id="be-key-status" class="form-hint"></div>
-          <label class="form-checkbox" id="be-clear-key-label" style="display:none; padding-top: 8px;">
-            <input id="be-clear-key" type="checkbox" onchange="toggleClearKey()">
-            Clear existing key
-          </label>
-        </div>
-        <div class="form-row">
+      <div class="modal-header">
+        <h3 id="modal-title">Add Backend</h3>
+      </div>
+      <div class="modal-body">
+        <form id="backend-form" onsubmit="saveBackend(event)">
           <div class="form-group">
-            <label>API Mode</label>
-            <select id="be-mode" class="form-input" onchange="toggleProviderPrefs()">
-              <option value="">OpenAI Compatible</option>
-              <option value="anthropic">Anthropic Native</option>
-              <option value="openrouter">OpenRouter (OpenAI + Cache)</option>
-            </select>
-            <div class="form-hint" id="be-mode-hint"></div>
+            <label>Name</label>
+            <input id="be-name" type="text" required class="form-input" placeholder="my-backend">
           </div>
-          <label class="form-checkbox">
-            <input id="be-optimize" type="checkbox">
-            Optimize
-          </label>
-        </div>
-        <div id="provider-prefs" style="display:none; margin-top: 4px; padding: 16px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: var(--radius-md);">
-          <div style="font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Provider Routing</div>
           <div class="form-group">
-            <label>Provider Order</label>
-            <input id="be-prov-order" type="text" class="form-input" placeholder="Minimax, Anthropic, OpenAI">
-            <div class="form-hint">Comma-separated. Tried in order.</div>
+            <label>URL</label>
+            <input id="be-url" type="text" required class="form-input" placeholder="https://api.example.com">
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <input id="be-key" type="text" class="form-input" placeholder="sk-...">
+            <div id="be-key-status" class="form-hint"></div>
+            <label class="form-checkbox" id="be-clear-key-label" style="display:none; padding-top: 8px;">
+              <input id="be-clear-key" type="checkbox" onchange="toggleClearKey()">
+              Clear existing key
+            </label>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Sort By</label>
-              <select id="be-prov-sort" class="form-input">
-                <option value="">Default</option>
-                <option value="price">Price</option>
-                <option value="throughput">Throughput</option>
-                <option value="latency">Latency</option>
+              <label>API Mode</label>
+              <select id="be-mode" class="form-input" onchange="toggleProviderPrefs()">
+                <option value="">OpenAI Compatible</option>
+                <option value="anthropic">Anthropic Native</option>
+                <option value="openrouter">OpenRouter (OpenAI + Cache)</option>
               </select>
+              <div class="form-hint" id="be-mode-hint"></div>
             </div>
             <label class="form-checkbox">
-              <input id="be-prov-fallbacks" type="checkbox" checked>
-              Allow Fallbacks
+              <input id="be-optimize" type="checkbox">
+              Optimize
             </label>
           </div>
-          <div class="form-group">
-            <label>Ignore Providers</label>
-            <input id="be-prov-ignore" type="text" class="form-input" placeholder="Together, DeepInfra">
-            <div class="form-hint">Comma-separated. Excluded from routing.</div>
+          <div id="provider-prefs" class="provider-prefs">
+            <div class="provider-prefs-title">Provider Routing</div>
+            <div class="form-group">
+              <label>Provider Order</label>
+              <input id="be-prov-order" type="text" class="form-input" placeholder="Minimax, Anthropic, OpenAI">
+              <div class="form-hint">Comma-separated. Tried in order.</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Sort By</label>
+                <select id="be-prov-sort" class="form-input">
+                  <option value="">Default</option>
+                  <option value="price">Price</option>
+                  <option value="throughput">Throughput</option>
+                  <option value="latency">Latency</option>
+                </select>
+              </div>
+              <label class="form-checkbox">
+                <input id="be-prov-fallbacks" type="checkbox" checked>
+                Allow Fallbacks
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Ignore Providers</label>
+              <input id="be-prov-ignore" type="text" class="form-input" placeholder="Together, DeepInfra">
+              <div class="form-hint">Comma-separated. Excluded from routing.</div>
+            </div>
           </div>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn btn-primary">Save</button>
-          <button type="button" class="btn" onclick="closeModal()">Cancel</button>
-        </div>
-      </form>
+          <div class="modal-footer" style="margin: 24px -24px -24px; padding: 16px 24px;">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -744,6 +1008,19 @@ const API = '/admin/api';
 let backends = {};
 let rules = [];
 let backendNames = [];
+
+// ── Tab switching ──
+
+function switchTab(name) {
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    const tabs = ['backends', 'routing', 'settings'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+}
+
+// ── Data loading ──
 
 async function load() {
   try {
@@ -756,17 +1033,16 @@ async function load() {
     backendNames = Object.keys(backends);
     renderBackends();
     renderRules();
-    document.getElementById('status-text').textContent = 'connected';
-    document.getElementById('status-dot').style.background = 'var(--accent-green)';
+    document.getElementById('status-text').textContent = 'Online';
+    document.getElementById('status-badge').classList.remove('offline');
   } catch (e) {
-    document.getElementById('status-text').textContent = 'disconnected';
-    document.getElementById('status-dot').style.background = 'var(--accent-red)';
+    document.getElementById('status-text').textContent = 'Offline';
+    document.getElementById('status-badge').classList.add('offline');
     toast('Failed to load config', 'error');
   }
 }
 
 function resolveApiMode(name, b) {
-  // The "anthropic" backend always uses native Anthropic API regardless of apiMode field
   if (name === 'anthropic') return 'anthropic';
   return b.apiMode || 'openai';
 }
@@ -778,7 +1054,14 @@ function modeTagClass(mode) {
 }
 
 function renderBackends() {
+  const count = Object.keys(backends).length;
+  document.getElementById('backends-count').textContent = `${count} Backend${count !== 1 ? 's' : ''}`;
+
   const el = document.getElementById('backends-list');
+  if (count === 0) {
+    el.innerHTML = '<div class="empty-state">No backends configured</div>';
+    return;
+  }
   el.innerHTML = Object.entries(backends).map(([name, b]) => {
     const iconClass = ['anthropic','lmstudio','openrouter'].includes(name) ? name : 'default';
     const initial = name[0].toUpperCase();
@@ -816,7 +1099,13 @@ function renderBackends() {
 }
 
 function renderRules() {
+  document.getElementById('rules-count').textContent = `${rules.length} Rule${rules.length !== 1 ? 's' : ''}`;
+
   const el = document.getElementById('rules-list');
+  if (rules.length === 0) {
+    el.innerHTML = '<div class="empty-state">No routing rules configured</div>';
+    return;
+  }
   el.innerHTML = rules.map((r, i) => `
     <div class="routing-row" data-idx="${i}">
       <span class="row-num">${i + 1}</span>
@@ -942,7 +1231,7 @@ function editBackend(name) {
   if (b.hasApiKey) {
     document.getElementById('be-key').placeholder = 'Leave empty to keep existing key';
     document.getElementById('be-key-status').textContent = 'Key is set';
-    document.getElementById('be-key-status').style.color = 'var(--accent-green)';
+    document.getElementById('be-key-status').style.color = 'var(--green)';
     document.getElementById('be-clear-key-label').style.display = 'flex';
   } else {
     document.getElementById('be-key').placeholder = 'sk-...';
@@ -950,15 +1239,17 @@ function editBackend(name) {
     document.getElementById('be-key-status').style.color = 'var(--text-muted)';
     document.getElementById('be-clear-key-label').style.display = 'none';
   }
-  document.getElementById('be-mode').value = b.apiMode || '';
-  document.getElementById('be-optimize').checked = !!b.optimize;
-
-  // For the "anthropic" backend, show a hint that it always uses native Anthropic API
+  const modeSelect = document.getElementById('be-mode');
   if (name === 'anthropic') {
+    modeSelect.value = 'anthropic';
+    modeSelect.disabled = true;
     document.getElementById('be-mode-hint').textContent = 'Always uses native Anthropic API';
   } else {
+    modeSelect.value = b.apiMode || '';
+    modeSelect.disabled = false;
     document.getElementById('be-mode-hint').textContent = '';
   }
+  document.getElementById('be-optimize').checked = !!b.optimize;
 
   populateProviderPrefs(b.providerPreferences);
   toggleProviderPrefs();
@@ -975,18 +1266,16 @@ async function saveBackend(e) {
 
   const body = {
     url: document.getElementById('be-url').value.trim(),
-    apiMode: document.getElementById('be-mode').value || undefined,
+    apiMode: name === 'anthropic' ? undefined : (document.getElementById('be-mode').value || undefined),
     optimize: document.getElementById('be-optimize').checked,
   };
 
-  // Key handling: new key provided → send it, clear checkbox → clearApiKey, otherwise server preserves existing
   if (clearKey) {
     body.clearApiKey = true;
   } else if (keyValue) {
     body.apiKey = keyValue;
   }
 
-  // Attach provider preferences for OpenRouter
   if (body.apiMode === 'openrouter') {
     const parseList = (v) => v.split(',').map(s => s.trim()).filter(Boolean);
     const order = parseList(document.getElementById('be-prov-order').value);
@@ -1035,7 +1324,6 @@ function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
 
-// Close on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModal();
 });
@@ -1068,11 +1356,11 @@ async function loadAuth() {
 function renderOrgIds() {
   const el = document.getElementById('org-ids-list');
   if (orgIds.length === 0) {
-    el.innerHTML = '<div class="form-hint" style="padding: 4px 0; color: var(--accent-red);">No org IDs configured — all API requests will be denied</div>';
+    el.innerHTML = '<div class="org-empty-warning">No org IDs configured — all API requests will be denied</div>';
     return;
   }
   el.innerHTML = orgIds.map((id, i) => `
-    <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="org-row">
       <input class="form-input" style="flex: 1;" value="${id}" onchange="orgIds[${i}]=this.value.trim()" placeholder="org-...">
       <button class="btn-icon danger" onclick="orgIds.splice(${i},1);renderOrgIds()" title="Remove">
         <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1084,7 +1372,6 @@ function renderOrgIds() {
 function addOrgIdRow() {
   orgIds.push('');
   renderOrgIds();
-  // Focus the newly added input
   const inputs = document.getElementById('org-ids-list').querySelectorAll('input');
   if (inputs.length) inputs[inputs.length - 1].focus();
 }
