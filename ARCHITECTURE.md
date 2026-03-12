@@ -105,7 +105,7 @@ modelgate.config.yaml          (base config, checked into git)
 
 - **ConfigStore** (`config-store.ts`): Singleton holding live config. Deep-merges base config with persistent overlay per backend so env overrides are preserved.
 - **Admin API** (`routes/admin-api.ts`): REST endpoints for CRUD on backends, routing rules, and auth settings (cache TTL, org-ID allowlist). API keys are never exposed — only a boolean `hasApiKey`. Changes written to `data/config.yaml`.
-- **Admin Panel** (`admin/index.html`): SPA at `/admin/` for visual config editing. Protected by Basic Auth.
+- **Admin Panel** (`admin/index.html`): SPA at `/admin/` for visual config editing. Includes Logs tab with filters, detail modal with syntax-highlighted JSON, and fullpage toggle for Request/Response JSON inspection. Protected by Basic Auth.
 - **Persistence**: `data/` directory mounted as Docker volume — survives rebuilds.
 
 ## Security Model
@@ -131,7 +131,15 @@ modelgate.config.yaml          (base config, checked into git)
 6. Valid token + allowed org → cached for configurable TTL (default 60min)
 7. Allowlist changes via admin panel take effect immediately (live config, re-checked even for cached tokens)
 
-## Logging
+## Request Logging (SQLite)
+
+All requests are persisted to `data/modelgate.db` (SQLite, WAL mode, better-sqlite3):
+- Full raw request/response JSON, token usage, costs, metadata
+- Configurable retention (default 14 days, hourly auto-cleanup)
+- Admin API: `GET /admin/api/logs`, `GET /admin/api/logs/:id`, `GET /admin/api/logs/stats`, `PUT/GET /admin/api/logs/retention`, `DELETE /admin/api/logs`
+- Admin panel Logs tab: filters (model, backend, status, date range, search), detail modal with syntax-highlighted JSON and fullpage toggle for large payloads
+
+## Console Logging
 
 Compact one-line format per request with full cost breakdown:
 
@@ -157,7 +165,8 @@ Token usage fields shown when available:
 | Component | Technology |
 |-----------|-----------|
 | Proxy | TypeScript, Hono, Node.js 22 |
-| Admin UI | Vanilla JS, JetBrains Mono, dark theme |
+| Admin UI | Vanilla JS, JetBrains Mono, dark theme, fullpage JSON viewer |
+| Database | SQLite (better-sqlite3, WAL mode) |
 | Containerization | Docker (multi-stage build, ~50 MB image) |
 | LLM Runtime | LM Studio with MLX backend (Apple Silicon optimized) |
 | Networking | SSH reverse tunnel (Mac → code1), nginx + Let's Encrypt (code1 → internet) |

@@ -42,6 +42,8 @@ ModelGate (/v1/messages)
 - **API key protection** — Admin API never exposes API keys (returns boolean `hasApiKey` only)
 - **Admin Basic Auth** — `/admin/*` protected via `ADMIN_USER`/`ADMIN_PASSWORD` env vars (required, server refuses to start without it)
 - **Compact logging** — One-line per request/response with full token usage and cost breakdown
+- **Request logging (SQLite)** — Full request/response JSON stored in SQLite (WAL mode), with configurable retention, date range filters, model/backend/status filters, search, and detail modal with syntax-highlighted JSON + fullpage view
+- **Log detail fullpage** — Request and Response JSON boxes in the log detail modal can be expanded to fullscreen for easier inspection of large payloads
 
 ## Quick Start
 
@@ -196,13 +198,15 @@ src/
 ├── transform/
 │   ├── anthropic-to-openai.ts        # Request format: Anthropic → OpenAI
 │   └── openai-to-anthropic.ts        # Response format: OpenAI → Anthropic (+ streaming)
+├── db.ts                             # SQLite persistent request logging (WAL mode)
 └── routes/
     ├── messages.ts                   # POST /v1/messages handler
-    └── admin-api.ts                  # Admin REST API (backends, routing CRUD)
+    └── admin-api.ts                  # Admin REST API (backends, routing, logs CRUD)
 admin/
-└── index.html                        # Admin panel SPA (dark theme, vanilla JS)
+└── index.html                        # Admin panel SPA (dark theme, vanilla JS, log detail with fullpage JSON)
 data/
-└── config.yaml                       # Persistent config (Docker volume)
+├── config.yaml                       # Persistent config (Docker volume)
+└── modelgate.db                      # SQLite request log database (Docker volume)
 ```
 
 ## Tech Stack
