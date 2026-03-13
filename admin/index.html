@@ -675,9 +675,11 @@
     .logs-list { min-height: 100px; }
     .log-row {
       display: flex; flex-direction: column; gap: 4px;
-      padding: calc(10px * var(--scale)) calc(16px * var(--scale)); border-bottom: 1px solid var(--border-subtle);
+      padding: calc(10px * var(--scale)) calc(16px * var(--scale)); border-bottom: 1px solid var(--border);
       cursor: pointer; transition: background var(--transition);
     }
+    .log-row:nth-child(even) { background: var(--bg-card); }
+    .log-row:nth-child(odd) { background: var(--bg-deep); }
     .log-row:hover { background: var(--bg-card-hover); }
     .log-row.error { border-left: 3px solid var(--red); }
     .log-top {
@@ -687,7 +689,10 @@
       font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost);
       background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: 3px;
       padding: 1px 5px; white-space: nowrap; flex-shrink: 0; min-width: calc(40px * var(--scale)); text-align: center;
+      cursor: pointer; transition: all var(--transition);
     }
+    .log-id:hover { color: var(--accent-bright); border-color: var(--accent); background: var(--accent-dim); }
+    .log-id.copied { color: var(--green); border-color: var(--green); background: var(--green-dim); }
     .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; flex-shrink: 0; }
     .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .log-model-override { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-muted); }
@@ -1218,6 +1223,7 @@ function switchTab(name) {
   document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
   if (name === 'logs' && !logsLoaded) { loadLogStats(); loadLogs(); logsLoaded = true; }
+  history.replaceState(null, '', '#' + name);
 }
 
 // ── Data loading ──
@@ -1786,7 +1792,7 @@ function renderLogs(append) {
 
     return `<div class="log-row${errorClass}" onclick="showLogDetail(${log.id})">
       <div class="log-top">
-        <span class="log-id">#${log.id}</span>
+        <span class="log-id" onclick="event.stopPropagation();copyLogId(${log.id},this)">#${log.id}</span>
         <span class="log-time">${date} ${time}</span>
         <span class="log-model">${escHtml(log.model)}</span>${overrideTag}${streamTag}
         <span class="log-top-spacer"></span>
@@ -1970,7 +1976,20 @@ async function saveRetention() {
   }
 }
 
+// ── Copy log ID to clipboard ──
+function copyLogId(id, el) {
+  navigator.clipboard.writeText(String(id)).then(() => {
+    el.classList.add('copied');
+    el.textContent = '✓ ' + id;
+    toast(`Log ID ${id} copied`, 'success');
+    setTimeout(() => { el.classList.remove('copied'); el.textContent = '#' + id; }, 1500);
+  });
+}
+
 // ── Init ──
+const validTabs = ['backends', 'routing', 'logs', 'settings'];
+const hashTab = location.hash.replace('#', '');
+if (validTabs.includes(hashTab)) switchTab(hashTab);
 load();
 loadAuth();
 </script>
