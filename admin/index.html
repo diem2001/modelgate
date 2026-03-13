@@ -1283,6 +1283,8 @@ function renderBackends() {
   }).join('');
 }
 
+const openRulePrefs = new Set();
+
 function renderRules() {
   document.getElementById('rules-count').textContent = `${rules.length} Rule${rules.length !== 1 ? 's' : ''}`;
 
@@ -1318,7 +1320,7 @@ function renderRules() {
         </button>
       </div>
     </div>
-    ${isOR ? `<div class="routing-prefs" id="rule-prefs-${i}">
+    ${isOR ? `<div class="routing-prefs${openRulePrefs.has(i) ? ' open' : ''}" id="rule-prefs-${i}">
       <div class="routing-prefs-grid">
         <div>
           <label>Provider Order</label>
@@ -1349,6 +1351,7 @@ function renderRules() {
 }
 
 function toggleRulePrefs(i) {
+  if (openRulePrefs.has(i)) openRulePrefs.delete(i); else openRulePrefs.add(i);
   const el = document.getElementById('rule-prefs-' + i);
   if (el) el.classList.toggle('open');
 }
@@ -1365,7 +1368,17 @@ function setRulePref(i, key, value) {
     if (!value) pp.allow_fallbacks = false; else delete pp.allow_fallbacks;
   }
   if (!Object.keys(pp).length) delete rules[i].providerPreferences;
-  renderRules();
+  // Update gear icon highlight without full re-render
+  const row = document.querySelector(`.routing-row[data-idx="${i}"]`);
+  const gearBtn = row?.querySelector('.btn-icon.has-prefs, .btn-icon:not(.danger):first-child');
+  if (row) {
+    const hasPrefs = rules[i].providerPreferences && Object.keys(rules[i].providerPreferences).length > 0;
+    row.querySelectorAll('.btn-icon').forEach(btn => {
+      if (btn.title === 'Provider preferences') {
+        btn.classList.toggle('has-prefs', hasPrefs);
+      }
+    });
+  }
 }
 
 function addRule() {
