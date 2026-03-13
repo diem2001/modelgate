@@ -452,7 +452,7 @@
     /* ── Routing Table ── */
     .routing-header {
       display: grid;
-      grid-template-columns: 36px 1fr 1fr 1fr 80px;
+      grid-template-columns: 36px 1fr 1fr 1fr 106px;
       gap: 8px;
       padding: 10px 20px;
       background: var(--bg-surface);
@@ -470,7 +470,7 @@
 
     .routing-row {
       display: grid;
-      grid-template-columns: 36px 1fr 1fr 1fr 80px;
+      grid-template-columns: 36px 1fr 1fr 1fr 106px;
       gap: 8px;
       padding: 4px 20px;
       align-items: center;
@@ -536,6 +536,59 @@
       gap: 8px;
       border-top: 1px solid var(--border-subtle);
       background: var(--bg-surface);
+    }
+
+    .routing-prefs {
+      grid-column: 1 / -1;
+      padding: 12px 20px 12px 56px;
+      background: var(--bg-inset);
+      border-bottom: 1px solid var(--border-subtle);
+      display: none;
+    }
+    .routing-prefs.open { display: block; }
+    .routing-prefs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+    .routing-prefs-grid label {
+      font-family: var(--mono);
+      font-size: calc(9px * var(--scale));
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-ghost);
+      margin-bottom: 2px;
+      display: block;
+    }
+    .routing-prefs-grid input,
+    .routing-prefs-grid select {
+      font-family: var(--mono);
+      font-size: calc(11px * var(--scale));
+      color: var(--text-primary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      width: 100%;
+      outline: none;
+      transition: all var(--transition);
+    }
+    .routing-prefs-grid input:focus,
+    .routing-prefs-grid select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+    .routing-prefs-grid select option {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+    .routing-prefs-inline {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-secondary);
+    }
+    .btn-icon.has-prefs {
+      color: var(--amber);
     }
 
     /* ── Settings Panel ── */
@@ -1286,15 +1339,22 @@ function renderRules() {
     el.innerHTML = '<div class="empty-state">No routing rules configured</div>';
     return;
   }
-  el.innerHTML = rules.map((r, i) => `
+  el.innerHTML = rules.map((r, i) => {
+    const isOR = r.backend === 'openrouter' || backends[r.backend]?.apiMode === 'openrouter';
+    const hasPrefs = r.providerPreferences && Object.keys(r.providerPreferences).length > 0;
+    const pp = r.providerPreferences || {};
+    return `
     <div class="routing-row" data-idx="${i}">
       <span class="row-num">${i + 1}</span>
       <input value="${r.match}" onchange="rules[${i}].match=this.value" placeholder="*">
-      <select onchange="rules[${i}].backend=this.value">
+      <select onchange="rules[${i}].backend=this.value;renderRules()">
         ${backendNames.map(n => `<option value="${n}" ${n===r.backend?'selected':''}>${n}</option>`).join('')}
       </select>
       <input value="${r.model||''}" onchange="rules[${i}].model=this.value||undefined" placeholder="(none)">
       <div class="row-actions">
+        ${isOR ? `<button class="btn-icon ${hasPrefs ? 'has-prefs' : ''}" onclick="toggleRulePrefs(${i})" title="Provider preferences">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>` : ''}
         <button class="btn-icon" onclick="moveRule(${i},-1)" ${i===0?'disabled style="opacity:0.25"':''} title="Move up">
           <svg class="icon" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
         </button>
@@ -1306,7 +1366,54 @@ function renderRules() {
         </button>
       </div>
     </div>
-  `).join('');
+    ${isOR ? `<div class="routing-prefs" id="rule-prefs-${i}">
+      <div class="routing-prefs-grid">
+        <div>
+          <label>Provider Order</label>
+          <input value="${(pp.order||[]).join(', ')}" onchange="setRulePref(${i},'order',this.value)" placeholder="Hyperbolic, Together, ...">
+        </div>
+        <div>
+          <label>Sort</label>
+          <select onchange="setRulePref(${i},'sort',this.value)">
+            <option value="" ${!pp.sort?'selected':''}>Default</option>
+            <option value="price" ${pp.sort==='price'?'selected':''}>Price</option>
+            <option value="throughput" ${pp.sort==='throughput'?'selected':''}>Throughput</option>
+            <option value="latency" ${pp.sort==='latency'?'selected':''}>Latency</option>
+          </select>
+        </div>
+        <div>
+          <label>Ignore Providers</label>
+          <input value="${(pp.ignore||[]).join(', ')}" onchange="setRulePref(${i},'ignore',this.value)" placeholder="DeepInfra, ...">
+        </div>
+        <div style="display:flex;align-items:end;padding-bottom:6px">
+          <label class="routing-prefs-inline">
+            <input type="checkbox" ${pp.allow_fallbacks !== false ? 'checked' : ''} onchange="setRulePref(${i},'allow_fallbacks',this.checked)">
+            Allow Fallbacks
+          </label>
+        </div>
+      </div>
+    </div>` : ''}`;
+  }).join('');
+}
+
+function toggleRulePrefs(i) {
+  const el = document.getElementById('rule-prefs-' + i);
+  if (el) el.classList.toggle('open');
+}
+
+function setRulePref(i, key, value) {
+  if (!rules[i].providerPreferences) rules[i].providerPreferences = {};
+  const pp = rules[i].providerPreferences;
+  if (key === 'order' || key === 'ignore') {
+    const list = value.split(',').map(s => s.trim()).filter(Boolean);
+    if (list.length) pp[key] = list; else delete pp[key];
+  } else if (key === 'sort') {
+    if (value) pp[key] = value; else delete pp[key];
+  } else if (key === 'allow_fallbacks') {
+    if (!value) pp.allow_fallbacks = false; else delete pp.allow_fallbacks;
+  }
+  if (!Object.keys(pp).length) delete rules[i].providerPreferences;
+  renderRules();
 }
 
 function addRule() {
@@ -1330,6 +1437,7 @@ async function saveRules() {
   const cleaned = rules.map(r => {
     const rule = { match: r.match, backend: r.backend };
     if (r.model) rule.model = r.model;
+    if (r.providerPreferences && Object.keys(r.providerPreferences).length) rule.providerPreferences = r.providerPreferences;
     return rule;
   });
   const res = await fetch(`${API}/routing`, {
