@@ -126,14 +126,21 @@ export function createMessagesRoute(): Hono {
         const errorBody = await upstreamRes.text();
         logResponseError(body.model, backend.backendName, upstreamRes.status, errorBody);
 
-        // Extract clean error message — avoid double-wrapping if backend already formatted it
-        let errorMessage = `Backend error (${upstreamRes.status}): ${errorBody}`;
+        // If backend already returned a well-formed Anthropic error, pass it through
+        // to preserve the correct error type (e.g. invalid_request_error vs api_error)
+        let passthrough = false;
+        let errorMessage = errorBody;
         try {
           const parsed = JSON.parse(errorBody);
-          if (parsed?.type === 'error' && parsed?.error?.message) {
+          if (parsed?.type === 'error' && parsed?.error?.type && parsed?.error?.message) {
+            passthrough = true;
             errorMessage = parsed.error.message;
           }
-        } catch { /* not JSON, use raw */ }
+        } catch { /* not JSON */ }
+
+        if (!passthrough) {
+          errorMessage = `Backend error (${upstreamRes.status}): ${errorBody}`;
+        }
 
         // Log error to DB
         try {
@@ -158,7 +165,8 @@ export function createMessagesRoute(): Hono {
           });
         } catch { /* don't break request on logging failure */ }
 
-        return new Response(JSON.stringify({
+        // Pass through well-formed Anthropic errors as-is, wrap others
+        return new Response(passthrough ? errorBody : JSON.stringify({
           type: 'error',
           error: { type: 'api_error', message: errorMessage },
         }), {
