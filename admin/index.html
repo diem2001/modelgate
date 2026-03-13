@@ -456,7 +456,7 @@
       gap: 8px;
       padding: 10px 20px;
       background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border);
     }
 
     .routing-header span {
@@ -474,9 +474,11 @@
       gap: 8px;
       padding: 4px 20px;
       align-items: center;
-      border-bottom: 1px solid rgba(20, 20, 42, 0.6);
+      border-bottom: 1px solid var(--border);
       transition: background var(--transition);
     }
+    .routing-row:nth-child(even) { background: var(--bg-card); }
+    .routing-row:nth-child(odd) { background: var(--bg-deep); }
     .routing-row:last-child { border-bottom: none; }
     .routing-row:hover { background: var(--bg-card-hover); }
 
