@@ -126,6 +126,15 @@ export function createMessagesRoute(): Hono {
         const errorBody = await upstreamRes.text();
         logResponseError(body.model, backend.backendName, upstreamRes.status, errorBody);
 
+        // Extract clean error message — avoid double-wrapping if backend already formatted it
+        let errorMessage = `Backend error (${upstreamRes.status}): ${errorBody}`;
+        try {
+          const parsed = JSON.parse(errorBody);
+          if (parsed?.type === 'error' && parsed?.error?.message) {
+            errorMessage = parsed.error.message;
+          }
+        } catch { /* not JSON, use raw */ }
+
         // Log error to DB
         try {
           insertLog({
@@ -142,7 +151,7 @@ export function createMessagesRoute(): Hono {
             input_tokens: 0, output_tokens: 0, cached_tokens: 0,
             cache_write_tokens: 0, reasoning_tokens: 0, cost: null,
             input_text: inputText,
-            output_text: errorBody,
+            output_text: errorMessage,
             tool_calls: '[]',
             request_body: requestBody,
             response_body: errorBody,
@@ -151,7 +160,7 @@ export function createMessagesRoute(): Hono {
 
         return new Response(JSON.stringify({
           type: 'error',
-          error: { type: 'api_error', message: `Backend error (${upstreamRes.status}): ${errorBody}` },
+          error: { type: 'api_error', message: errorMessage },
         }), {
           status: upstreamRes.status,
           headers: { 'content-type': 'application/json' },
