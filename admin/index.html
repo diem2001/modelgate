@@ -477,8 +477,8 @@
       border-bottom: 1px solid var(--border);
       transition: background var(--transition);
     }
-    .routing-row:nth-child(even) { background: var(--bg-card); }
-    .routing-row:nth-child(odd) { background: var(--bg-deep); }
+    .routing-row.row-even { background: var(--bg-card); }
+    .routing-row.row-odd { background: var(--bg-deep); }
     .routing-row:last-child { border-bottom: none; }
     .routing-row:hover { background: var(--bg-card-hover); }
 
@@ -1319,7 +1319,7 @@ function renderRules() {
     const hasPrefs = r.providerPreferences && Object.keys(r.providerPreferences).length > 0;
     const pp = r.providerPreferences || {};
     return `
-    <div class="routing-row" data-idx="${i}">
+    <div class="routing-row ${i % 2 === 0 ? 'row-odd' : 'row-even'}" data-idx="${i}">
       <span class="row-num">${i + 1}</span>
       <input value="${r.match}" onchange="rules[${i}].match=this.value" placeholder="*">
       <select onchange="rules[${i}].backend=this.value;renderRules()">
