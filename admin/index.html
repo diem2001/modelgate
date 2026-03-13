@@ -674,17 +674,24 @@
     .log-date-btn.active { background: var(--accent-dim); color: var(--accent-bright); border-color: var(--accent); }
     .logs-list { min-height: 100px; }
     .log-row {
-      display: flex; align-items: center; gap: calc(10px * var(--scale));
+      display: flex; flex-direction: column; gap: 4px;
       padding: calc(10px * var(--scale)) calc(16px * var(--scale)); border-bottom: 1px solid var(--border-subtle);
       cursor: pointer; transition: background var(--transition);
     }
     .log-row:hover { background: var(--bg-card-hover); }
     .log-row.error { border-left: 3px solid var(--red); }
-    .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; width: calc(58px * var(--scale)); flex-shrink: 0; }
-    .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; min-width: calc(120px * var(--scale)); max-width: calc(220px * var(--scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .log-meta { flex: 1; min-width: 0; }
-    .log-input-preview { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .log-tokens { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost); margin-top: 2px; }
+    .log-top {
+      display: flex; align-items: center; gap: calc(10px * var(--scale));
+    }
+    .log-id {
+      font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost);
+      background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: 3px;
+      padding: 1px 5px; white-space: nowrap; flex-shrink: 0; min-width: calc(40px * var(--scale)); text-align: center;
+    }
+    .log-time { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-ghost); white-space: nowrap; flex-shrink: 0; }
+    .log-model { font-family: var(--mono); font-size: calc(11px * var(--scale)); color: var(--accent-bright); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-model-override { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-muted); }
+    .log-top-spacer { flex: 1; }
     .log-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .log-status { font-family: var(--mono); font-size: calc(10px * var(--scale)); font-weight: 600; padding: 2px 6px; border-radius: 3px; }
     .log-status.s2xx { background: var(--green-dim); color: var(--green); }
@@ -692,6 +699,12 @@
     .log-status.s5xx { background: var(--red-dim); color: var(--red); }
     .log-duration { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); white-space: nowrap; }
     .log-cost { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--amber); white-space: nowrap; }
+    .log-bottom {
+      display: flex; align-items: center; gap: calc(10px * var(--scale));
+      padding-left: calc(50px * var(--scale));
+    }
+    .log-input-preview { font-family: var(--mono); font-size: calc(10px * var(--scale)); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .log-tokens { font-family: var(--mono); font-size: calc(9px * var(--scale)); color: var(--text-ghost); white-space: nowrap; flex-shrink: 0; }
 
     /* Log detail */
     .log-detail-section { margin-bottom: 20px; }
@@ -1741,7 +1754,20 @@ function renderLogs(append) {
     return;
   }
 
-  el.innerHTML = logsData.map(log => {
+  const legend = `<div class="log-row" style="cursor:default;padding:6px calc(16px * var(--scale));border-bottom:1px solid var(--border);background:var(--bg-surface)">
+    <div class="log-top" style="width:100%">
+      <span class="log-id" style="background:none;border:none;color:var(--text-ghost);font-weight:600">ID</span>
+      <span class="log-time" style="color:var(--text-ghost);font-weight:600">TIME</span>
+      <span style="font-family:var(--mono);font-size:calc(9px * var(--scale));color:var(--text-ghost);font-weight:600">MODEL</span>
+      <span class="log-top-spacer"></span>
+      <span style="font-family:var(--mono);font-size:calc(9px * var(--scale));color:var(--text-ghost);font-weight:600">BACKEND</span>
+      <span style="font-family:var(--mono);font-size:calc(9px * var(--scale));color:var(--text-ghost);font-weight:600;width:36px;text-align:center">HTTP</span>
+      <span style="font-family:var(--mono);font-size:calc(9px * var(--scale));color:var(--text-ghost);font-weight:600;width:50px;text-align:right">TIME</span>
+      <span style="font-family:var(--mono);font-size:calc(9px * var(--scale));color:var(--text-ghost);font-weight:600;width:50px;text-align:right">COST</span>
+    </div>
+  </div>`;
+
+  el.innerHTML = legend + logsData.map(log => {
     const ts = new Date(log.timestamp);
     const time = ts.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const date = ts.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
@@ -1749,26 +1775,31 @@ function renderLogs(append) {
     const errorClass = log.status >= 400 ? ' error' : '';
     const dur = log.duration_ms < 1000 ? `${log.duration_ms}ms` : `${(log.duration_ms/1000).toFixed(1)}s`;
     const costStr = log.cost ? `$${log.cost.toFixed(4)}` : '';
-    const preview = (log.input_text || '').replace(/\s+/g, ' ').slice(0, 100) || '(empty)';
+    const preview = (log.input_text || '').replace(/\s+/g, ' ').slice(0, 120) || '(empty)';
     const cached = log.cached_tokens ? ` · ${fmtK(log.cached_tokens)} cached` : '';
     const tokens = `${fmtK(log.input_tokens)} in${cached} · ${fmtK(log.output_tokens)} out`;
     const backendTag = log.provider_hint
       ? `<span class="tag tag-mode-openrouter" style="font-size: calc(9px * var(--scale))">${log.backend} via ${log.provider_hint}</span>`
       : `<span class="tag tag-mode-openai" style="font-size: calc(9px * var(--scale))">${log.backend}</span>`;
-    const streamTag = log.stream ? ' <span style="font-size: calc(8px * var(--scale));color:var(--text-ghost)">SSE</span>' : '';
+    const streamTag = log.stream ? '<span style="font-size:calc(8px * var(--scale));color:var(--text-ghost);margin-left:2px">SSE</span>' : '';
+    const overrideTag = log.requested_model ? `<span class="log-model-override">← ${escHtml(log.requested_model)}</span>` : '';
 
     return `<div class="log-row${errorClass}" onclick="showLogDetail(${log.id})">
-      <div class="log-time">${date}<br>${time}</div>
-      <div class="log-model">${log.model}${log.requested_model ? `<br><span style="font-size:calc(9px * var(--scale));color:var(--text-muted)">← ${log.requested_model}</span>` : ''}${streamTag}</div>
-      <div class="log-meta">
-        <div class="log-input-preview">${escHtml(preview)}</div>
-        <div class="log-tokens">${tokens}</div>
+      <div class="log-top">
+        <span class="log-id">#${log.id}</span>
+        <span class="log-time">${date} ${time}</span>
+        <span class="log-model">${escHtml(log.model)}</span>${overrideTag}${streamTag}
+        <span class="log-top-spacer"></span>
+        <div class="log-right">
+          ${backendTag}
+          <span class="log-status ${statusClass}">${log.status}</span>
+          <span class="log-duration">${dur}</span>
+          ${costStr ? `<span class="log-cost">${costStr}</span>` : ''}
+        </div>
       </div>
-      <div class="log-right">
-        ${backendTag}
-        <span class="log-status ${statusClass}">${log.status}</span>
-        <span class="log-duration">${dur}</span>
-        ${costStr ? `<span class="log-cost">${costStr}</span>` : ''}
+      <div class="log-bottom">
+        <span class="log-input-preview">${escHtml(preview)}</span>
+        <span class="log-tokens">${tokens}</span>
       </div>
     </div>`;
   }).join('');
@@ -1797,8 +1828,8 @@ async function showLogDetail(id) {
   const streamLabel = log.stream ? 'stream' : 'sync';
 
   document.getElementById('log-modal-title').textContent = log.requested_model
-    ? `${log.requested_model} → ${log.model} → ${log.backend}`
-    : `${log.model} → ${log.backend}`;
+    ? `#${log.id} · ${log.requested_model} → ${log.model} → ${log.backend}`
+    : `#${log.id} · ${log.model} → ${log.backend}`;
 
   // Token bars
   const maxToken = Math.max(log.input_tokens, log.output_tokens, log.cached_tokens, log.cache_write_tokens, log.reasoning_tokens, 1);
