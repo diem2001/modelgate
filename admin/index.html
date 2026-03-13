@@ -937,24 +937,6 @@
     /* ── SVG Icons ── */
     .icon { width: calc(13px * var(--scale)); height: calc(13px * var(--scale)); stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* ── Provider prefs nested panel ── */
-    .provider-prefs {
-      display: none;
-      margin-top: 4px;
-      padding: 16px;
-      background: var(--bg-inset);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    .provider-prefs-title {
-      font-family: var(--mono);
-      font-size: calc(9px * var(--scale));
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-ghost);
-      margin-bottom: 12px;
-    }
   </style>
 </head>
 <body>
@@ -1149,7 +1131,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>API Mode</label>
-              <select id="be-mode" class="form-input" onchange="toggleProviderPrefs()">
+              <select id="be-mode" class="form-input">
                 <option value="">OpenAI Compatible</option>
                 <option value="anthropic">Anthropic Native</option>
                 <option value="openrouter">OpenRouter (OpenAI + Cache)</option>
@@ -1160,34 +1142,6 @@
               <input id="be-optimize" type="checkbox">
               Optimize
             </label>
-          </div>
-          <div id="provider-prefs" class="provider-prefs">
-            <div class="provider-prefs-title">Provider Routing</div>
-            <div class="form-group">
-              <label>Provider Order</label>
-              <input id="be-prov-order" type="text" class="form-input" placeholder="Minimax, Anthropic, OpenAI">
-              <div class="form-hint">Comma-separated. Tried in order.</div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Sort By</label>
-                <select id="be-prov-sort" class="form-input">
-                  <option value="">Default</option>
-                  <option value="price">Price</option>
-                  <option value="throughput">Throughput</option>
-                  <option value="latency">Latency</option>
-                </select>
-              </div>
-              <label class="form-checkbox">
-                <input id="be-prov-fallbacks" type="checkbox" checked>
-                Allow Fallbacks
-              </label>
-            </div>
-            <div class="form-group">
-              <label>Ignore Providers</label>
-              <input id="be-prov-ignore" type="text" class="form-input" placeholder="Together, DeepInfra">
-              <div class="form-hint">Comma-separated. Excluded from routing.</div>
-            </div>
           </div>
           <div class="modal-footer" style="margin: 24px -24px -24px; padding: 16px 24px;">
             <button type="submit" class="btn btn-primary">Save</button>
@@ -1301,8 +1255,6 @@ function renderBackends() {
     const mode = resolveApiMode(name, b);
     const modeTag = `<span class="tag ${modeTagClass(mode)}">${mode}</span>`;
     const optimizeTag = b.optimize ? '<span class="tag tag-optimized">optimized</span>' : '';
-    const providerTag = b.providerPreferences?.order?.length
-      ? `<span class="tag tag-mode-openrouter">${b.providerPreferences.order[0]}</span>` : '';
     const keyTag = b.hasApiKey
       ? '<span class="tag tag-key">key set</span>'
       : '<span class="tag tag-nokey">no key</span>';
@@ -1319,7 +1271,7 @@ function renderBackends() {
           <div class="backend-url">${b.url}</div>
         </div>
         <div class="backend-tags">
-          ${modeTag}${providerTag}${optimizeTag}${keyTag}
+          ${modeTag}${optimizeTag}${keyTag}
         </div>
         <div class="backend-actions">
           <button class="btn-icon" onclick="editBackend('${name}')" title="Edit">
@@ -1466,25 +1418,6 @@ function toggleClearKey() {
   }
 }
 
-function toggleProviderPrefs() {
-  const mode = document.getElementById('be-mode').value;
-  document.getElementById('provider-prefs').style.display = mode === 'openrouter' ? 'block' : 'none';
-}
-
-function clearProviderPrefs() {
-  document.getElementById('be-prov-order').value = '';
-  document.getElementById('be-prov-sort').value = '';
-  document.getElementById('be-prov-fallbacks').checked = true;
-  document.getElementById('be-prov-ignore').value = '';
-}
-
-function populateProviderPrefs(pp) {
-  if (!pp) { clearProviderPrefs(); return; }
-  document.getElementById('be-prov-order').value = (pp.order || []).join(', ');
-  document.getElementById('be-prov-sort').value = pp.sort || '';
-  document.getElementById('be-prov-fallbacks').checked = pp.allow_fallbacks !== false;
-  document.getElementById('be-prov-ignore').value = (pp.ignore || []).join(', ');
-}
 
 function showAddBackend() {
   editingBackend = null;
@@ -1501,8 +1434,6 @@ function showAddBackend() {
   document.getElementById('be-mode').value = '';
   document.getElementById('be-optimize').checked = false;
   document.getElementById('be-mode-hint').textContent = '';
-  clearProviderPrefs();
-  toggleProviderPrefs();
   openModal();
 }
 
@@ -1538,9 +1469,6 @@ function editBackend(name) {
     document.getElementById('be-mode-hint').textContent = '';
   }
   document.getElementById('be-optimize').checked = !!b.optimize;
-
-  populateProviderPrefs(b.providerPreferences);
-  toggleProviderPrefs();
   openModal();
 }
 
@@ -1562,20 +1490,6 @@ async function saveBackend(e) {
     body.clearApiKey = true;
   } else if (keyValue) {
     body.apiKey = keyValue;
-  }
-
-  if (body.apiMode === 'openrouter') {
-    const parseList = (v) => v.split(',').map(s => s.trim()).filter(Boolean);
-    const order = parseList(document.getElementById('be-prov-order').value);
-    const sort = document.getElementById('be-prov-sort').value || undefined;
-    const allow_fallbacks = document.getElementById('be-prov-fallbacks').checked;
-    const ignore = parseList(document.getElementById('be-prov-ignore').value);
-    const pp = {};
-    if (order.length) pp.order = order;
-    if (sort) pp.sort = sort;
-    if (!allow_fallbacks) pp.allow_fallbacks = false;
-    if (ignore.length) pp.ignore = ignore;
-    if (Object.keys(pp).length) body.providerPreferences = pp;
   }
 
   const res = await fetch(`${API}/backends/${name}`, {
