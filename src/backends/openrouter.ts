@@ -57,11 +57,15 @@ export async function forwardToOpenRouter(
       message = `Backend error (${upstreamRes.status}): ${errorText}`;
     }
 
+    // Map upstream status to Anthropic-compatible error types so Claude Code
+    // displays the actual message instead of generic "model not found" etc.
+    const { status, errorType } = mapUpstreamError(upstreamRes.status, message);
+
     return new Response(JSON.stringify({
       type: 'error',
-      error: { type: 'api_error', message },
+      error: { type: errorType, message },
     }), {
-      status: upstreamRes.status,
+      status,
       headers: { 'content-type': 'application/json' },
     });
   }
@@ -283,4 +287,33 @@ function handleStreamingResponse(upstreamRes: Response, model: string): Response
       'connection': 'keep-alive',
     },
   });
+}
+
+// ── Error mapping ──
+
+/**
+ * Map upstream HTTP status to Anthropic-compatible status + error type.
+ * Claude Code has hardcoded handling for certain statuses (e.g. 404 = "model not found")
+ * that hides the actual error message. We remap provider errors to types where
+ * Claude Code displays the real message to the user.
+ */
+function mapUpstreamError(
+  upstreamStatus: number,
+  _message: string,
+): { status: number; errorType: string } {
+  // Auth errors stay as-is
+  if (upstreamStatus === 401 || upstreamStatus === 403) {
+    return { status: upstreamStatus, errorType: 'authentication_error' };
+  }
+  // Rate limits stay as-is
+  if (upstreamStatus === 429) {
+    return { status: 429, errorType: 'rate_limit_error' };
+  }
+  // Provider capacity / overloaded
+  if (upstreamStatus === 503 || upstreamStatus === 529) {
+    return { status: 529, errorType: 'overloaded_error' };
+  }
+  // Everything else (404 model not found, 400 bad request, 402 payment, 5xx) →
+  // return as 400 invalid_request_error so Claude Code shows the actual message
+  return { status: 400, errorType: 'invalid_request_error' };
 }
