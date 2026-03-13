@@ -22,6 +22,7 @@ export interface RoutingRule {
   match: string;
   backend: string;
   model?: string; // override model name sent to backend
+  providerPreferences?: ProviderPreferences; // OpenRouter-specific: per-rule provider routing (overrides backend-level)
 }
 
 export interface LoggingConfig {

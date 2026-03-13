@@ -80,7 +80,7 @@ export function createMessagesRoute(): Hono {
     const requestedModelLog = requestedModel !== body.model ? requestedModel : null;
 
     const backendConfig = config.backends[backend.backendName];
-    const providerHint = backendConfig?.providerPreferences?.order?.[0];
+    const providerHint = backend.providerPreferences?.order?.[0];
     logRequest(body, backend.backendName, providerHint);
 
     // Capture request metadata for DB logging
@@ -105,7 +105,7 @@ export function createMessagesRoute(): Hono {
         upstreamRes = await forwardToAnthropic(body, backend.url, backend.apiKey, headers);
       } else {
         if (backendConfig?.apiMode === 'openrouter') {
-          upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey, backendConfig.providerPreferences);
+          upstreamRes = await forwardToOpenRouter(body, backend.url, backendConfig.apiKey, backend.providerPreferences);
         } else if (backendConfig?.apiMode === 'anthropic') {
           const optimize = backendConfig?.optimize !== false;
           upstreamRes = await forwardToLocalAnthropic(body, backend.url, backendConfig.apiKey, optimize);
