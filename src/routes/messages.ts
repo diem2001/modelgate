@@ -41,6 +41,33 @@ function extractToolNames(content?: AnthropicContentBlock[]): string[] {
     .map(b => b.name ?? '?');
 }
 
+function stripImages(req: AnthropicRequest): { request: AnthropicRequest; removedCount: number } | null {
+  let removedCount = 0;
+
+  function filterContent(blocks: AnthropicContentBlock[]): AnthropicContentBlock[] {
+    return blocks.reduce<AnthropicContentBlock[]>((acc, b) => {
+      if (b.type === 'image') { removedCount++; return acc; }
+      // Recurse into tool_result content
+      if (b.type === 'tool_result' && Array.isArray(b.content)) {
+        const inner = filterContent(b.content as AnthropicContentBlock[]);
+        acc.push({ ...b, content: inner.length > 0 ? inner : '(image removed)' });
+        return acc;
+      }
+      acc.push(b);
+      return acc;
+    }, []);
+  }
+
+  const newMessages = req.messages.map(msg => {
+    if (typeof msg.content === 'string') return msg;
+    const filtered = filterContent(msg.content);
+    if (filtered.length === 0) return { ...msg, content: [{ type: 'text' as const, text: '(image removed)' }] };
+    return { ...msg, content: filtered };
+  });
+  if (removedCount === 0) return null;
+  return { request: { ...req, messages: newMessages as AnthropicRequest['messages'] }, removedCount };
+}
+
 export function createMessagesRoute(): Hono {
   const app = new Hono();
 
@@ -140,6 +167,93 @@ export function createMessagesRoute(): Hono {
 
         if (!passthrough) {
           errorMessage = `Backend error (${upstreamRes.status}): ${errorBody}`;
+        }
+
+        // Retry without images on "Could not process image" errors
+        if (upstreamRes.status === 400 && errorMessage.includes('Could not process image')) {
+          const stripped = stripImages(body);
+          if (stripped) {
+            console.log(`  \x1b[33m⟳\x1b[0m Retrying without ${stripped.removedCount} image(s)…`);
+            // Re-serialize and recurse through the same backend path
+            const retryBody = stripped.request;
+            const retryRequestBody = JSON.stringify(retryBody);
+            const retryInputText = extractInputText(retryBody);
+            const retryStartTime = Date.now();
+
+            let retryRes: Response;
+            if (backend.backendName === 'anthropic') {
+              retryRes = await forwardToAnthropic(retryBody, backend.url, backend.apiKey, headers);
+            } else if (backendConfig?.apiMode === 'openrouter') {
+              retryRes = await forwardToOpenRouter(retryBody, backend.url, backendConfig.apiKey, backend.providerPreferences);
+            } else if (backendConfig?.apiMode === 'anthropic') {
+              retryRes = await forwardToLocalAnthropic(retryBody, backend.url, backendConfig.apiKey, backendConfig?.optimize !== false);
+            } else {
+              retryRes = await forwardToOpenAICompat(retryBody, backend.url, backendConfig?.apiKey, backendConfig?.optimize !== false);
+            }
+
+            // If retry also fails, fall through to normal error handling below
+            if (retryRes.status >= 200 && retryRes.status < 300) {
+              const retryHeaders = new Headers();
+              const ct = retryRes.headers.get('content-type');
+              if (ct) retryHeaders.set('content-type', ct);
+
+              if (retryBody.stream && retryRes.body) {
+                logStreamStart(retryBody.model, backend.backendName);
+                return createLoggingStream(
+                  retryRes, retryHeaders, retryBody.model, backend.backendName, retryStartTime,
+                  providerHint ?? null, turns, numTools, retryInputText, retryRequestBody, requestedModelLog,
+                );
+              }
+
+              const retryResponseBody = await retryRes.text();
+              let retryContent: AnthropicResponse['content'] | undefined;
+              let retryUsage: TokenUsage | undefined;
+              try {
+                const parsed = JSON.parse(retryResponseBody) as AnthropicResponse;
+                retryContent = parsed.content;
+                if (parsed.usage) {
+                  const u = parsed.usage as Record<string, number>;
+                  retryUsage = {
+                    input: u.input_tokens ?? 0,
+                    output: u.output_tokens ?? 0,
+                    cached: u.cache_read_input_tokens || undefined,
+                    cacheWrite: u.cache_creation_input_tokens || undefined,
+                  };
+                }
+              } catch { /* not JSON */ }
+
+              logResponseSync(retryBody.model, backend.backendName, retryRes.status, Date.now() - retryStartTime, retryContent, retryUsage);
+
+              try {
+                insertLog({
+                  timestamp: new Date().toISOString(),
+                  model: retryBody.model,
+                  requested_model: requestedModelLog,
+                  backend: backend.backendName,
+                  provider_hint: providerHint ?? null,
+                  status: retryRes.status,
+                  duration_ms: Date.now() - retryStartTime,
+                  stream: false,
+                  turns,
+                  num_tools: numTools,
+                  input_tokens: retryUsage?.input ?? 0,
+                  output_tokens: retryUsage?.output ?? 0,
+                  cached_tokens: retryUsage?.cached ?? 0,
+                  cache_write_tokens: retryUsage?.cacheWrite ?? 0,
+                  reasoning_tokens: 0,
+                  cost: retryUsage?.cost ?? null,
+                  input_text: retryInputText,
+                  output_text: extractResponseText(retryContent),
+                  tool_calls: JSON.stringify(extractToolNames(retryContent)),
+                  request_body: retryRequestBody,
+                  response_body: retryResponseBody,
+                });
+              } catch { /* don't break request on logging failure */ }
+
+              return new Response(retryResponseBody, { status: retryRes.status, headers: retryHeaders });
+            }
+            // Retry also failed — continue with original error handling
+          }
         }
 
         // Log error to DB

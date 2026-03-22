@@ -128,6 +128,14 @@ Live config editor at `/admin/` — edit backends, routing rules, API keys, auth
 
 Changes are persisted to `data/config.yaml` and survive Docker rebuilds (mounted as volume).
 
+| Backends | Routing |
+|----------|---------|
+| ![Backends](screenshots/backends.png) | ![Routing](screenshots/routing.png) |
+
+| Logs | Settings |
+|------|----------|
+| ![Logs](screenshots/logs.png) | ![Settings](screenshots/settings.png) |
+
 ### Security
 
 - **Org-ID allowlist**: Only requests from allowed Anthropic organizations are accepted. Configure via admin panel or `PUT /admin/api/auth`. When empty, all API requests are denied (secure by default).
