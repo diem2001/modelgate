@@ -37,6 +37,8 @@ export interface LogRecord {
 export function initDb(retention?: number): void {
   mkdirSync(DATA_DIR, { recursive: true });
   db = new Database(DB_PATH);
+  // Must be set before any table exists; no-op on already-populated DBs.
+  db.pragma('auto_vacuum = FULL');
   db.pragma('journal_mode = WAL');
   db.pragma('busy_timeout = 5000');
 
